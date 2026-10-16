@@ -54,7 +54,7 @@ const seedActivities = [
     id: '55555555-5555-4555-8555-555555555555',
     slug: 'oraculo-katsy',
     type: 'oracle',
-    title: 'Oráculo de Katsy',
+    title: 'Oráculo de Jatsi',
     description: 'Una señal bonita del universo, solo para ti.',
     config: { options: ['Tu ritmo también es progreso.', 'Algo bonito ya viene en camino.', 'Hoy confía en tu intuición.', 'No tienes que poder con todo a la vez.', 'Tu rareza es parte de tu luz.', 'Esa idea merece una oportunidad.'] },
     is_active: true

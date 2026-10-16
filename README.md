@@ -1,12 +1,12 @@
 # Jatsi Universe ✦
 
-Experiencia web inmersiva para Jatsi y Katsy, preparada para GitHub Pages. Incluye animaciones reactivas, nuevas ilustraciones, actividades compartibles, cuentas de usuario, panel administrativo y analíticas.
+Experiencia web inmersiva para Jatsi, que presenta sus dos personalidades: Jatsi y Katsy. Preparada para GitHub Pages, incluye animaciones reactivas, nuevas ilustraciones, actividades compartibles, cuentas de usuario, panel administrativo y analíticas.
 
 ## Lo que ya funciona
 
 - Inicio inmersivo con profundidad, partículas reactivas y sonido ambiental opcional.
 - Diseño adaptable para computadora, tableta y móvil.
-- Ruleta cósmica, encuestas, buzón anónimo, Esto o aquello, Oráculo de Katsy y preguntas para Q&A.
+- Ruleta cósmica, encuestas, buzón anónimo, Esto o aquello, Oráculo de Jatsi y preguntas para Q&A.
 - Cada actividad genera un enlace directo que se puede pegar en Discord.
 - Modo demostración local para probar todas las pantallas sin configurar servicios.
 - Registro e inicio de sesión con correo.

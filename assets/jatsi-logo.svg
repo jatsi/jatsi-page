@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="left-wing" x1="20" y1="29" x2="64" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD0F0"/>
+      <stop offset="1" stop-color="#BD78FF"/>
+    </linearGradient>
+    <linearGradient id="right-wing" x1="108" y1="29" x2="64" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#71EDFF"/>
+      <stop offset="1" stop-color="#A98AFF"/>
+    </linearGradient>
+    <linearGradient id="orbit" x1="20" y1="20" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD0F0"/>
+      <stop offset=".52" stop-color="#BA8AFF"/>
+      <stop offset="1" stop-color="#71EDFF"/>
+    </linearGradient>
+    <filter id="soft-glow" x="5" y="5" width="118" height="118" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="57" fill="#100824" stroke="url(#orbit)" stroke-opacity=".65" stroke-width="2"/>
+  <circle cx="64" cy="64" r="48" stroke="#E9D6FF" stroke-opacity=".13"/>
+  <circle cx="64" cy="64" r="34" stroke="url(#orbit)" stroke-opacity=".18" stroke-width="9" filter="url(#soft-glow)"/>
+  <path d="M59 58C48 38 30 31 27 43c-3 10 7 17 24 21-17 1-26 9-21 16 5 8 18 2 31-14" fill="url(#left-wing)" fill-opacity=".9"/>
+  <path d="M69 58c11-20 29-27 32-15 3 10-7 17-24 21 17 1 26 9 21 16-5 8-18 2-31-14" fill="url(#right-wing)" fill-opacity=".9"/>
+  <path d="M64 48c-5-8-16-5-16 4 0 7 16 19 16 19s16-12 16-19c0-9-11-12-16-4Z" fill="#FFF5FF"/>
+  <path d="M64 48c-5-8-16-5-16 4 0 7 16 19 16 19V48Z" fill="#D5A4FF" fill-opacity=".45"/>
+  <path d="M64 33v-7m-8 11-5-6m21 6 5-6" stroke="#FFF2FF" stroke-opacity=".86" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="28" cy="55" r="2.5" fill="#78EDFF"/>
+  <circle cx="100" cy="55" r="2.5" fill="#FFD0F0"/>
+  <path d="m42 94 2.1 5.9L50 102l-5.9 2.1L42 110l-2.1-5.9L34 102l5.9-2.1L42 94Z" fill="#E7D2FF" fill-opacity=".8"/>
+  <path d="m87 91 1.5 4.5L93 97l-4.5 1.5L87 103l-1.5-4.5L81 97l4.5-1.5L87 91Z" fill="#91ECFF" fill-opacity=".8"/>
+</svg>
