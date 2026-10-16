@@ -1,54 +1,83 @@
-# Jatsi & Katsy · Sitio web
+# Jatsi Universe ✦
 
-Proyecto estático completo listo para GitHub Pages. Incluye el wallpaper, ilustraciones, iconos, efectos de estrellas, parallax y visor de imágenes con zoom.
+Experiencia web inmersiva para Jatsi y Katsy, preparada para GitHub Pages. Incluye animaciones reactivas, nuevas ilustraciones, actividades compartibles, cuentas de usuario, panel administrativo y analíticas.
 
-## Abrir en tu computadora
+## Lo que ya funciona
 
-Descomprime todo el ZIP y abre `index.html` con Chrome, Edge o Firefox. Conserva `styles.css`, `script.js` y la carpeta `assets` junto al HTML.
+- Inicio inmersivo con profundidad, partículas reactivas y sonido ambiental opcional.
+- Diseño adaptable para computadora, tableta y móvil.
+- Ruleta cósmica, encuestas, buzón anónimo, Esto o aquello, Oráculo de Katsy y preguntas para Q&A.
+- Cada actividad genera un enlace directo que se puede pegar en Discord.
+- Modo demostración local para probar todas las pantallas sin configurar servicios.
+- Registro e inicio de sesión con correo.
+- Historial personal de mensajes, votos, giros y respuestas.
+- Panel exclusivo para la administradora con mensajes, actividades y analíticas.
+- Creación de nuevas actividades desde el panel.
+- Datos en tiempo real cuando Supabase está conectado.
+- Preferencia de movimiento reducido y navegación con teclado.
 
-No necesitas Node.js, npm, Vite, Vinext, Vertex, Vercel ni una API de generación de imágenes. Las ilustraciones ya están incluidas como archivos. No hay instalación ni comando de compilación.
+## Probarla en tu computadora
+
+La página usa módulos JavaScript, así que debe abrirse mediante un servidor local y no con doble clic sobre index.html.
+
+Si tienes Python:
+
+    python -m http.server 4173
+
+Después abre http://localhost:4173. Sin Supabase configurado, el sitio entra automáticamente en modo demostración y guarda las interacciones en el navegador.
+
+## Activar usuarios, mensajes y analíticas reales
+
+GitHub Pages publica archivos estáticos y no puede guardar usuarios ni mensajes por sí solo. Este proyecto usa Supabase como base de datos y sistema de acceso.
+
+1. Crea un proyecto gratuito en [Supabase](https://supabase.com/dashboard).
+2. Abre SQL Editor, pega todo el contenido de [supabase/schema.sql](supabase/schema.sql) y ejecútalo.
+3. En Project Settings → API, copia:
+   - Project URL.
+   - Publishable key (también puede aparecer como anon public en proyectos anteriores).
+4. Pega ambos valores en [config.js](config.js).
+5. Publica los cambios en GitHub Pages.
+6. Regístrate desde la página con tu correo.
+7. Vuelve al SQL Editor y ejecuta la instrucción final de schema.sql, cambiando TU-CORREO@EJEMPLO.COM por tu correo. Eso convierte únicamente tu cuenta en administradora.
+
+La Publishable key está diseñada para usarse en el navegador. No uses nunca la service_role key en config.js.
+
+## Enlaces directos para Discord
+
+Desde cada actividad pulsa “Copiar enlace para Discord”. El formato resultante es:
+
+    https://jatsi.github.io/jatsi-page/?activity=ruleta-cosmica
+
+Al abrirlo, la actividad aparece directamente. Las actividades nuevas creadas desde el panel generan su propio enlace.
 
 ## Publicar en GitHub Pages
 
-1. Crea un repositorio nuevo, por ejemplo `jatsi-web`. Un repositorio público permite usar GitHub Pages con GitHub Free.
-2. Descomprime este ZIP. En el repositorio, elige **Add file → Upload files**.
-3. Sube **el contenido** de esta carpeta: `index.html`, `styles.css`, `script.js`, `assets`, `README.md` y, si tu sistema lo muestra, `.nojekyll`. No subas solo el ZIP ni una carpeta contenedora que deje `index.html` en un nivel inferior. También puedes usar GitHub Desktop para añadir todos los archivos.
-4. Guarda los archivos en la rama `main` con **Commit changes**.
-5. En **Settings → Pages → Build and deployment**, selecciona **Deploy from a branch**.
-6. Elige la rama **main** y la carpeta **/(root)**. Pulsa **Save**.
-7. Espera a que GitHub termine de publicar. El enlace aparecerá en esa misma pantalla, normalmente `https://TU-USUARIO.github.io/jatsi-web/`.
+El repositorio ya está preparado para publicación estática desde la raíz:
 
-Las rutas de imágenes y estilos son relativas, compatibles con un repositorio como `/jatsi-web/`. No necesitas GitHub Actions personalizado, dominio propio ni configurar variables de entorno.
+1. Sube los cambios a la rama main.
+2. En GitHub abre Settings → Pages.
+3. Elige Deploy from a branch, rama main, carpeta /(root).
+4. Espera a que GitHub complete el despliegue.
 
-Los cambios que subas después a `main` se publicarán automáticamente. GitHub Pages es una publicación pública; el acceso privado de la copia alojada en ChatGPT no se transfiere a GitHub.
+## Archivos principales
 
-Guía oficial: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+- index.html: estructura y contenido.
+- styles.css: dirección visual, movimiento y adaptación móvil.
+- script.js: actividades, cuentas, panel y animaciones.
+- config.js: conexión pública con Supabase.
+- supabase/schema.sql: tablas, permisos, rol administrador y datos iniciales.
+- assets/jatsi-katsy-portal.webp: nueva ilustración principal.
+- assets/jatsi-activity-oracle.webp: nueva ilustración del centro interactivo.
 
-## Si algo no funciona
+## Privacidad y seguridad
 
-- **Error 404:** revisa que `index.html` esté en la raíz del repositorio y Pages apunte a `main` y `/(root)`.
-- **Sin imágenes o estilos:** sube la carpeta `assets` completa y conserva mayúsculas, minúsculas y nombres de archivo.
-- **GitHub muestra el código pero no la web:** abre la dirección de GitHub Pages, no la página del repositorio.
-- **No se ven cambios:** espera a que finalice el despliegue en la pestaña Actions y recarga con Ctrl + F5.
-- **Una plataforma pide Build command:** este proyecto no tiene compilación. Usa alojamiento estático y el directorio raíz.
-- **Sin conexión:** las imágenes locales, el diseño y el visor siguen disponibles. Google Fonts, TikTok y los enlaces externos requieren internet. Hay tipografías alternativas si Google Fonts no carga.
+La base usa Row Level Security:
 
-## Videos de TikTok: limitación conocida
+- Cada usuario puede consultar solo sus propias interacciones.
+- Los mensajes enviados sin iniciar sesión no se vinculan a una cuenta.
+- Si alguien inicia sesión y marca un mensaje como anónimo, su nombre se oculta en el panel pero la interacción conserva el identificador interno para que esa persona pueda verla en su propio historial.
+- Solo el rol admin puede leer todas las respuestas, crear actividades y consultar analíticas.
+- La autorización ocurre en la base de datos; no depende de ocultar botones en la interfaz.
+- La cuenta administradora se asigna desde el SQL Editor y no desde el navegador.
 
-La sección contiene las integraciones oficiales de perfil de `@jatsi_vt` y `@katsyvt`, con enlaces alternativos. Se ha observado que TikTok puede mostrar “Perfil no disponible” o solo la ficha del perfil sin videos. **No es una galería de videos individuales garantizada y no se arregla con GitHub Pages.**
-
-Para una galería de publicaciones individuales se necesitan sus enlaces exactos; para listar videos automáticamente mediante la Display API se necesita una aplicación aprobada y autorización de TikTok. No se incluyen claves ni tokens.
-
-## Editar el proyecto
-
-- `index.html`: textos, enlaces, agradecimientos y estructura.
-- `styles.css`: colores, distribución, adaptación móvil y animaciones.
-- `script.js`: efectos, pausa, copia de CLABE y visor con zoom.
-- `assets/`: ilustraciones e iconos utilizados en la web.
-
-TikTok principal: `@jatsi_vt`. Cuenta secundaria: `@katsyvt`.
-Los nombres de suggars son agradecimientos históricos, sin ranking actual.
-
-## Recursos
-
-Las ilustraciones fueron creadas a partir de los personajes proporcionados por Jatsi. Los logotipos de redes provienen de Simple Icons (CC0); las marcas pertenecen a sus respectivos titulares. Fansly utiliza un icono propio de corazón con candado. No se concede una licencia de reutilización del personaje mediante este archivo.
+Para un lanzamiento público conviene activar confirmación de correo, protección anti-bots y las restricciones de registro disponibles en Supabase Auth.
