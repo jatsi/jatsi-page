@@ -865,6 +865,136 @@ $('#site-header .sound-toggle').addEventListener('click', async event => {
 
 $('#copy-clabe').addEventListener('click', () => copyText('012272015568267840', 'CLABE copiada ♡'));
 
+// Curated public highlights from Twitch and YouTube, plus TikTok links supplied by Jatsi.
+const clipItems = [
+  { platform:'youtube', id:'s8aVMa9STcY', title:'¡Doblaje de Lily! ¿Rescatarás a los huérfanos?', views:'6.7 mil vistas', image:'s8aVMa9STcY.jpg' },
+  { platform:'youtube', id:'bOy8bmq7SdY', title:'Doblaje divertido con Mommy y Miss Poppy', views:'5.8 mil vistas', image:'bOy8bmq7SdY.jpg' },
+  { platform:'youtube', id:'88_W7AG0AT0', title:'¡Corre! Streamer confundido por su equipo', views:'1.2 mil vistas', image:'88_W7AG0AT0.jpg' },
+  { platform:'tiktok', handle:'jatsi_vt', id:'7668451724335598869', title:'Clip de Jatsi en TikTok' },
+  { platform:'tiktok', handle:'jatsi_vt', id:'7684423239497420050', title:'Clip de Jatsi en TikTok' },
+  { platform:'tiktok', handle:'jatsi_vt', id:'7695680160225365254', title:'Clip de Jatsi en TikTok' },
+  { platform:'tiktok', handle:'katsyvt', id:'7684396430290603284', title:'Clip de Katsy en TikTok' },
+  { platform:'tiktok', handle:'katsyvt', id:'7664735968825560338', title:'Clip de Katsy en TikTok' },
+  { platform:'tiktok', handle:'katsyvt', id:'7637387920063597831', title:'Clip de Katsy en TikTok' },
+  { platform:'twitch', id:'HappyAbstruseSmoothieYouDontSay-dq9HpfLzcPRLvSwz', title:'Por mala clip', views:'78 vistas', image:'HappyAbstruseSmoothieYouDontSay-dq9HpfLzcPRLvSwz.jpg' },
+  { platform:'twitch', id:'TriangularSillyTrayCorgiDerp-jgECmmStqzUxYvvi', title:'Modo transformers', views:'59 vistas', image:'TriangularSillyTrayCorgiDerp-jgECmmStqzUxYvvi.jpg' },
+  { platform:'twitch', id:'LovelyBoredRamenThunBeast-fGy3XGdXnNnWIoI-', title:'Onichan', views:'43 vistas', image:'LovelyBoredRamenThunBeast-fGy3XGdXnNnWIoI-.jpg' },
+  { platform:'twitch', id:'AthleticMagnificentNigiriPogChamp-BrZDTXp9YIdUKZXO', title:'Jatsi siento Jatsi', views:'25 vistas', image:'AthleticMagnificentNigiriPogChamp-BrZDTXp9YIdUKZXO.jpg' },
+  { platform:'twitch', id:'ObliviousBlazingLasagnaChocolateRain-k4cYuEl-vl49tAIT', title:'Manqueando con seguidores', views:'21 vistas', image:'ObliviousBlazingLasagnaChocolateRain-k4cYuEl-vl49tAIT.jpg' },
+  { platform:'twitch', id:'DarkShinyAlmondMikeHogu-HL82hWirWUvr1wV_', title:'Uy, una obra de arte', views:'13 vistas', image:'DarkShinyAlmondMikeHogu-HL82hWirWUvr1wV_.jpg' },
+  { platform:'twitch', id:'GloriousDeterminedFalconAsianGlow-hh17OPaB6_G_IkZ7', title:'Valiste', views:'11 vistas', image:'GloriousDeterminedFalconAsianGlow-hh17OPaB6_G_IkZ7.jpg' },
+  { platform:'twitch', id:'CuteSnappyFlyCmonBruh-V6GbhgWuVXiszXa7', title:'Hola amor', views:'7 vistas', image:'CuteSnappyFlyCmonBruh-V6GbhgWuVXiszXa7.jpg' },
+  { platform:'twitch', id:'TardyStupidChinchillaJKanStyle-a_VAU2WA6Wu-8g_y', title:'Repo interactivo, platiquita y Genshin', views:'6 vistas', image:'TardyStupidChinchillaJKanStyle-a_VAU2WA6Wu-8g_y.jpg' },
+  { platform:'twitch', id:'MistyIronicGoatStrawBeary-zlt53xJqPd_2TfTq', title:'La sumisa complaciente', views:'6 vistas', image:'MistyIronicGoatStrawBeary-zlt53xJqPd_2TfTq.jpg' },
+  { platform:'twitch', id:'RenownedFlirtyAmazonVoteNay-om_0v9KkFS7gZHOi', title:'¿Se la qué?', views:'5 vistas', image:'RenownedFlirtyAmazonVoteNay-om_0v9KkFS7gZHOi.jpg' },
+  { platform:'twitch', id:'KathishVibrantTardigradeRedCoat-KrrjvNowk-QmUUK-', title:'XD', views:'4 vistas', image:'KathishVibrantTardigradeRedCoat-KrrjvNowk-QmUUK-.jpg' },
+  { platform:'twitch', id:'SteamyUnusualStinkbugMikeHogu-WHHKhZZcM8mVlph3', title:'Sumisa', views:'4 vistas', image:'SteamyUnusualStinkbugMikeHogu-WHHKhZZcM8mVlph3.jpg' }
+];
+
+const clipTrack = $('#clip-track');
+if (clipTrack) {
+  const labels = { twitch:'TWITCH CLIP', youtube:'YOUTUBE SHORT', tiktok:'TIKTOK' };
+  const links = {
+    twitch: id => 'https://www.twitch.tv/jatsi25/clip/' + id,
+    youtube: id => 'https://www.youtube.com/shorts/' + id,
+    tiktok: (id, clip) => 'https://www.tiktok.com/@' + clip.handle + '/video/' + id
+  };
+  clipItems.forEach((clip, index) => {
+    const url = links[clip.platform](clip.id, clip);
+    const card = document.createElement('article');
+    card.className = 'clip-card';
+    const frame = document.createElement('div');
+    frame.className = 'clip-frame' + (clip.image ? '' : ' clip-art-poster clip-art-' + clip.platform);
+    frame.dataset.clipPlatform = clip.platform;
+    frame.dataset.clipId = clip.id;
+    frame.dataset.clipTitle = clip.title;
+    const poster = document.createElement('img');
+    poster.className = 'clip-poster';
+    poster.alt = 'Vista previa: ' + clip.title;
+    poster.loading = index < 3 ? 'eager' : 'lazy';
+    if (clip.image) poster.src = 'assets/clips/curated/' + clip.image;
+    else poster.hidden = true;
+    const badge = document.createElement('span');
+    badge.className = 'clip-platform-pill';
+    badge.textContent = labels[clip.platform];
+    const play = document.createElement('button');
+    play.className = 'clip-launch'; play.type = 'button';
+    play.innerHTML = '<i aria-hidden="true">▶</i> Reproducir';
+    const open = document.createElement('a');
+    open.className = 'clip-open'; open.href = url; open.target = '_blank'; open.rel = 'noopener noreferrer';
+    open.setAttribute('aria-label', 'Abrir clip en ' + labels[clip.platform]); open.textContent = '↗';
+    frame.append(poster);
+    if (!clip.image) {
+      const artwork = document.createElement('div');
+      artwork.className = 'clip-art-copy';
+      artwork.innerHTML = '<i aria-hidden="true">' + (clip.platform === 'youtube' ? '▶' : '♪') + '</i><strong>' + (clip.platform === 'youtube' ? 'YOUTUBE SHORT' : 'MOMENTO TIKTOK') + '</strong>';
+      frame.append(artwork);
+    }
+    frame.append(badge, play, open);
+    const caption = document.createElement('div');
+    caption.className = 'clip-caption';
+    const eyebrow = document.createElement('span'); eyebrow.textContent = clip.views ? labels[clip.platform] + ' · ' + clip.views : labels[clip.platform] + ' · DESTACADO';
+    const title = document.createElement('h4'); title.textContent = clip.title;
+    const link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.innerHTML = 'Abrir clip <b>↗</b>';
+    caption.append(eyebrow, title, link); card.append(frame, caption); clipTrack.append(card);
+  });
+
+  const position = $('#clip-position');
+  const progress = $('#clip-progress');
+  const updateClipCarousel = () => {
+    const maxScroll = clipTrack.scrollWidth - clipTrack.clientWidth;
+    const first = Math.min(clipItems.length, Math.max(1, Math.round(clipTrack.scrollLeft / (clipTrack.querySelector('.clip-card').getBoundingClientRect().width + 18)) + 1));
+    if (position) position.textContent = String(first).padStart(2, '0') + ' / ' + String(clipItems.length).padStart(2, '0');
+    if (progress) progress.style.width = (maxScroll > 0 ? Math.max(8, clipTrack.scrollLeft / maxScroll * 100) : 100) + '%';
+  };
+  $('.clip-prev')?.addEventListener('click', () => clipTrack.scrollBy({ left: -clipTrack.clientWidth * .82, behavior: 'smooth' }));
+  $('.clip-next')?.addEventListener('click', () => clipTrack.scrollBy({ left: clipTrack.clientWidth * .82, behavior: 'smooth' }));
+  clipTrack.addEventListener('scroll', updateClipCarousel, { passive: true });
+  addEventListener('resize', updateClipCarousel);
+  updateClipCarousel();
+
+  // Create an embedded player only after explicit click to keep the page quick and quiet.
+  $$('[data-clip-platform]', clipTrack).forEach(frame => {
+    const button = $('.clip-launch', frame);
+    const directLink = $('.clip-open', frame);
+    button.addEventListener('click', () => {
+      // YouTube requires a web origin for its player, and Twitch requires a
+      // valid parent domain. TikTok's official iframe player also works from
+      // this static-file preview, so keep it embedded there.
+      if ((location.protocol === 'file:' && frame.dataset.clipPlatform !== 'tiktok') ||
+          (frame.dataset.clipPlatform === 'twitch' && frame.clientWidth < 400)) {
+        window.open(directLink.href, '_blank', 'noopener,noreferrer'); return;
+      }
+      let playerUrl;
+      if (frame.dataset.clipPlatform === 'twitch') {
+        const parents = new Set();
+        if (location.hostname) parents.add(location.hostname);
+        try { for (const origin of Array.from(location.ancestorOrigins || [])) { const hostname = new URL(origin).hostname; if (hostname) parents.add(hostname); } } catch { /* optional browser capability */ }
+        parents.add('jatsi.github.io');
+        playerUrl = new URL('https://clips.twitch.tv/embed');
+        playerUrl.searchParams.set('clip', frame.dataset.clipId);
+        for (const parent of parents) playerUrl.searchParams.append('parent', parent);
+        playerUrl.searchParams.set('autoplay', 'false'); playerUrl.searchParams.set('muted', 'true');
+      } else if (frame.dataset.clipPlatform === 'youtube') {
+        playerUrl = new URL('https://www.youtube.com/embed/' + frame.dataset.clipId);
+        playerUrl.searchParams.set('autoplay', '1'); playerUrl.searchParams.set('rel', '0');
+        if (location.origin && location.origin !== 'null') playerUrl.searchParams.set('origin', location.origin);
+      } else {
+        playerUrl = new URL('https://www.tiktok.com/player/v1/' + frame.dataset.clipId);
+        playerUrl.searchParams.set('music_info', '0'); playerUrl.searchParams.set('description', '0');
+      }
+      const player = document.createElement('iframe');
+      player.className = 'clip-embed'; player.title = frame.dataset.clipTitle + ' — reproductor';
+      player.width = '640'; player.height = '360'; player.loading = 'eager';
+      player.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture'; player.allowFullscreen = true;
+      player.referrerPolicy = 'strict-origin-when-cross-origin'; player.src = playerUrl.toString();
+      frame.replaceChildren(player, directLink); frame.classList.add('is-playing');
+      if (frame.dataset.clipPlatform === 'twitch') frame.classList.add('is-twitch-player');
+      if (frame.dataset.clipPlatform === 'tiktok') frame.classList.add('is-tiktok-player');
+    });
+  });
+}
+
 // Initial deep link and startup. Keeping this as a regular script also lets the
 // static page open directly from disk without browsers blocking ES modules.
 initSupabase().finally(() => {

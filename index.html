@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#09051a">
-  <link rel="icon" type="image/svg+xml" href="assets/jatsi-logo.svg">
-  <meta name="description" content="Cruza el portal de Jatsi: dos personalidades, juegos, encuestas, mensajes y magia para compartir con la comunidad.">
-  <title>Jatsi ✦ El portal de los corazones</title>
+  <link rel="icon" type="image/png" href="assets/jatsi-katsy-emblem.png">
+  <meta name="description" content="Jatsi y Katsy: su universo VTuber de juegos, clips, encuestas y momentos para compartir con la comunidad.">
+  <title>Jatsi y Katsy ✦ Universo VTuber</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -29,15 +29,16 @@
   </div>
 
   <header class="site-header" id="site-header">
-    <a class="brand" href="#inicio" aria-label="Jatsi, inicio">
-      <img class="brand-mark" src="assets/jatsi-logo.svg" alt="Símbolo de Jatsi">
-      <span>JATSI</span>
-      <small>UNIVERSO</small>
+    <a class="brand" href="#inicio" aria-label="Jatsi y Katsy, inicio">
+      <img class="brand-mark" src="assets/jatsi-katsy-emblem.png" alt="Emblema ilustrado de Jatsi y Katsy">
+      <span>JATSI × KATSY</span>
+      <small>VTUBERS</small>
     </a>
     <nav aria-label="Navegación principal">
-      <a href="#comunidad">Personalidades</a>
-      <a href="#experiencias">Entretenimiento</a>
-      <a href="#universo">Interactúa</a>
+      <a href="#recorrido">Empieza aquí</a>
+      <a href="#katsy-content">Katsy Content</a>
+      <a href="#experiencias">Experiencias</a>
+      <a href="#redes">Redes</a>
     </nav>
     <div class="header-actions">
       <button class="sound-toggle icon-button" type="button" aria-label="Activar sonido ambiental" aria-pressed="false"><i class="iconoir-sound-low"></i></button>
@@ -51,10 +52,12 @@
   </header>
 
   <aside class="mobile-menu" id="mobile-menu" aria-label="Menú móvil">
-    <a href="#comunidad">Personalidades <span>01</span></a>
-    <a href="#experiencias">Entretenimiento <span>02</span></a>
-    <a href="#universo">Interactúa <span>03</span></a>
-    <a href="#apoyo">Apoya el stream <span>04</span></a>
+    <a href="#recorrido">Empieza aquí <span>01</span></a>
+    <a href="#comunidad">Personalidades <span>02</span></a>
+    <a href="#katsy-content">Katsy Content <span>03</span></a>
+    <a href="#experiencias">Entretenimiento <span>05</span></a>
+    <a href="#redes">Redes sociales <span>06</span></a>
+    <a href="#apoyo">Apoya el stream <span>07</span></a>
   </aside>
 
   <aside class="sector-rail" aria-label="Índice del universo">
@@ -81,8 +84,8 @@
           <h1>Entra a otro<br><em>mundo.</em> Deja<br>tu señal.</h1>
           <div class="hero-lead"><span>PROTOCOLO / J-25</span><p>Juegos, decisiones, secretos y momentos que nacen contigo. Cruza el portal: cada visita altera este universo.</p></div>
           <div class="hero-actions">
-            <a class="button button-primary magnetic" href="#comunidad"><span>Conocer sus personalidades</span><i class="iconoir-arrow-up-right"></i></a>
-            <button class="button button-glass" type="button" data-open-auth>Crear mi constelación</button>
+            <a class="button button-primary magnetic" href="#recorrido"><span>Empezar el recorrido</span><i class="iconoir-arrow-up-right"></i></a>
+            <a class="button button-glass" href="#katsy-content">Descubrir a Katsy</a>
           </div>
           <div class="live-proof">
             <div class="avatar-stack" aria-hidden="true"><span>J</span><span>K</span><span>✦</span></div>
@@ -99,6 +102,19 @@
         <a class="scroll-cue" href="#comunidad" aria-label="Bajar a conocer las personalidades de Jatsi"><span>Conócelas</span><i></i></a>
       </div>
       <div class="hero-coordinates" aria-hidden="true">19.4326° N · 99.1332° W</div>
+    </section>
+
+    <section class="welcome-tour section shell" id="recorrido" aria-labelledby="tour-title">
+      <div class="tour-heading reveal">
+        <div><p class="kicker">GUÍA RÁPIDA · 3 PARADAS</p><h2 id="tour-title">¿Primera vez?<br><em>Empieza por aquí.</em></h2></div>
+        <p>Este universo se disfruta mejor participando. Sigue la ruta, conoce sus dos estilos y encuentra tu forma favorita de estar cerca.</p>
+      </div>
+      <div class="tour-steps">
+        <a class="tour-step reveal" href="#comunidad"><span class="tour-number">01</span><span class="tour-icon"><i class="iconoir-sparks"></i></span><small>PRIMERA PARADA</small><h3>Conoce a Jatsi y Katsy</h3><p>Dos personalidades, una creadora. Elige el mood que va contigo.</p><span class="tour-link">Ver personalidades <b>↗</b></span></a>
+        <a class="tour-step reveal" href="#katsy-content"><span class="tour-number">02</span><span class="tour-icon"><i class="iconoir-play"></i></span><small>SEGUNDA PARADA</small><h3>Asómate a su mundo</h3><p>Un vistazo entre directos, momentos relajados, clips y magia.</p><span class="tour-link">Explorar contenido <b>↗</b></span></a>
+        <a class="tour-step reveal" href="#experiencias"><span class="tour-number">03</span><span class="tour-icon"><i class="iconoir-chat-bubble"></i></span><small>TERCERA PARADA</small><h3>Deja tu propia señal</h3><p>Vota, juega o manda un mensaje para aparecer en la historia.</p><span class="tour-link">Participar ahora <b>↗</b></span></a>
+      </div>
+      <div class="tour-footnote"><span>✦</span> No hace falta conocerlo todo: entra, explora y quédate donde te sientas en casa.</div>
     </section>
 
     <section class="marquee" aria-label="Actividades disponibles">
@@ -136,6 +152,48 @@
           <div class="persona-signal"><i class="iconoir-sparks"></i> MAGIA / CHARLA</div>
           <div class="persona-copy"><span>02 / MAGIA SUAVE</span><h3>KATSY</h3><p>Ternura, calma y señales de otro mundo.</p><div class="persona-links"><a href="https://www.tiktok.com/@katsyvt" target="_blank" rel="noopener noreferrer"><img src="assets/icons/tiktok.svg" alt="">TikTok</a><a href="https://discord.gg/zSmg8te5KY" target="_blank" rel="noopener noreferrer"><img src="assets/icons/discord.svg" alt="">Comunidad</a></div></div>
         </article>
+      </div>
+    </section>
+
+    <section class="katsy-content section" id="katsy-content" aria-labelledby="katsy-content-title">
+      <div class="shell">
+        <div class="content-heading reveal">
+          <div><p class="kicker">02 · KATSY CONTENT / UNA VENTANA A SU UNIVERSO</p><h2 id="katsy-content-title">Un poquito de magia.<br><em>Muchos momentos.</em></h2></div>
+          <p>Una guía visual para descubrir qué puedes encontrar: directos tranquilos, clips con encanto y una comunidad que también forma parte del show.</p>
+        </div>
+        <div class="content-gallery">
+          <a class="content-tile content-feature reveal" href="https://www.twitch.tv/jatsi25" target="_blank" rel="noopener noreferrer">
+            <img src="assets/jatsi-cafe.webp" alt="Katsy en su café cósmico, rodeada de luces y estrellas" loading="lazy">
+            <span class="content-shade"></span><span class="content-tag"><i></i> EN DIRECTO · CHARLA &amp; MAGIA</span>
+            <span class="content-copy"><small>EL RINCÓN DE KATSY</small><strong>Un stream para bajar el ritmo y compartir.</strong><span>Asómate a Twitch <b>↗</b></span></span>
+            <span class="content-index">01 / 03</span>
+          </a>
+          <a class="content-tile content-moments reveal" href="https://www.tiktok.com/@katsyvt" target="_blank" rel="noopener noreferrer">
+            <img src="assets/katsy-clouds.webp" alt="Katsy en un jardín mágico entre flores" loading="lazy">
+            <span class="content-shade"></span><span class="content-tag">CLIPS &amp; MOMENTOS</span>
+            <span class="content-copy"><small>UN INSTANTE EN SU MUNDO</small><strong>Pequeños momentos, magia en grande.</strong><span>Ver TikTok <b>↗</b></span></span>
+            <span class="content-index">02 / 03</span>
+          </a>
+          <a class="content-tile content-community reveal" href="https://discord.gg/zSmg8te5KY" target="_blank" rel="noopener noreferrer">
+            <img src="assets/katsy-chibi.webp" alt="Katsy en versión chibi abrazando una estrella" loading="lazy">
+            <span class="content-shade"></span><span class="content-tag">COMUNIDAD · HECHO CONTIGO</span>
+            <span class="content-copy"><small>EL SHOW TAMBIÉN ES TUYO</small><strong>Vota, pregunta y deja tu huella.</strong><span>Entra a Discord <b>↗</b></span></span>
+            <span class="content-index">03 / 03</span>
+          </a>
+        </div>
+        <p class="content-note"><i class="iconoir-sparks"></i> Este es tu mapa de entrada: cada parada abre una puerta distinta al universo de Katsy.</p>
+        <div class="clip-section" id="clips">
+          <div class="clip-heading reveal">
+            <div><p class="kicker">03 · MOMENTOS DEL CANAL</p><h3>Los favoritos<br><em>de la comunidad.</em></h3><p class="clip-subtitle">22 momentos de Twitch, YouTube y TikTok. Selección basada en vistas públicas y los TikToks que compartiste.</p></div>
+            <a class="clip-channel-link" href="https://www.twitch.tv/jatsi25/clips?filter=clips&amp;range=all" target="_blank" rel="noopener noreferrer">Ver todos los clips <b>↗</b></a>
+          </div>
+          <div class="clip-carousel" aria-label="Carrusel de videoclips destacados">
+            <button class="clip-nav clip-prev" type="button" aria-label="Ver clips anteriores"><i class="iconoir-arrow-left"></i></button>
+            <div class="clip-track" id="clip-track" tabindex="0" aria-live="polite"></div>
+            <button class="clip-nav clip-next" type="button" aria-label="Ver clips siguientes"><i class="iconoir-arrow-right"></i></button>
+          </div>
+          <div class="clip-carousel-foot"><span id="clip-position">01 / 22</span><div class="clip-progress" aria-hidden="true"><i id="clip-progress"></i></div><span><i class="iconoir-swipe-two-fingers"></i> Desliza para explorar</span></div>
+        </div>
       </div>
     </section>
 
@@ -256,16 +314,16 @@
       </div>
     </section>
 
-    <section class="social-portal section">
+    <section class="social-portal section" id="redes" aria-labelledby="social-title">
       <div class="shell">
-        <div class="social-title reveal"><span>SEÑAL ABIERTA</span><h2>Encuéntranos en<br>todas las dimensiones.</h2></div>
+        <div class="social-title reveal"><div><span>PORTALES ABIERTOS · ELIGE EL TUYO</span><h2 id="social-title">La aventura<br>sigue en tus redes.</h2></div><p>Directos, clips, conversaciones y una comunidad que crece contigo. Síguenos donde más te guste.</p></div>
         <div class="social-links reveal">
-          <a class="social-link social-tiktok" href="https://www.tiktok.com/@jatsi_vt" target="_blank" rel="noopener noreferrer"><img src="assets/icons/tiktok.svg" alt=""><span><b>TikTok</b><small>@jatsi_vt</small></span><i>↗</i></a>
-          <a class="social-link social-twitch" href="https://www.twitch.tv/jatsi25" target="_blank" rel="noopener noreferrer"><img src="assets/icons/twitch.svg" alt=""><span><b>Twitch</b><small>jatsi25</small></span><i>↗</i></a>
-          <a class="social-link social-discord" href="https://discord.gg/zSmg8te5KY" target="_blank" rel="noopener noreferrer"><img src="assets/icons/discord.svg" alt=""><span><b>Discord</b><small>Comunidad</small></span><i>↗</i></a>
-          <a class="social-link social-youtube" href="https://www.youtube.com/@jatsi25" target="_blank" rel="noopener noreferrer"><img src="assets/icons/youtube.svg" alt=""><span><b>YouTube</b><small>@jatsi25</small></span><i>↗</i></a>
-          <a class="social-link social-instagram" href="https://www.instagram.com/jatsi25/" target="_blank" rel="noopener noreferrer"><img src="assets/icons/instagram.svg" alt=""><span><b>Instagram</b><small>@jatsi25</small></span><i>↗</i></a>
-          <a class="social-link social-kick" href="https://kick.com/jatsi25" target="_blank" rel="noopener noreferrer"><img src="assets/icons/kick.svg" alt=""><span><b>Kick</b><small>jatsi25</small></span><i>↗</i></a>
+          <a class="social-link social-twitch" href="https://www.twitch.tv/jatsi25" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/twitch.svg" alt=""></span><span><b>Twitch</b><small>Directos &amp; streams</small></span><i>↗</i><em>01</em></a>
+          <a class="social-link social-tiktok" href="https://www.tiktok.com/@jatsi_vt" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/tiktok.svg" alt=""></span><span><b>TikTok</b><small>Clips de Jatsi</small></span><i>↗</i><em>02</em></a>
+          <a class="social-link social-discord" href="https://discord.gg/zSmg8te5KY" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/discord.svg" alt=""></span><span><b>Discord</b><small>Entra a la comunidad</small></span><i>↗</i><em>03</em></a>
+          <a class="social-link social-youtube" href="https://www.youtube.com/@jatsi25" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/youtube.svg" alt=""></span><span><b>YouTube</b><small>Videos &amp; recuerdos</small></span><i>↗</i><em>04</em></a>
+          <a class="social-link social-instagram" href="https://www.instagram.com/jatsi25/" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/instagram.svg" alt=""></span><span><b>Instagram</b><small>Detrás del portal</small></span><i>↗</i><em>05</em></a>
+          <a class="social-link social-kick" href="https://kick.com/jatsi25" target="_blank" rel="noopener noreferrer"><span class="social-icon"><img src="assets/icons/kick.svg" alt=""></span><span><b>Kick</b><small>Encuéntrame en vivo</small></span><i>↗</i><em>06</em></a>
         </div>
       </div>
     </section>
@@ -285,12 +343,12 @@
 
   <footer>
     <div class="shell footer-grid">
-      <div><a class="brand" href="#inicio"><img class="brand-mark" src="assets/jatsi-logo.svg" alt="Símbolo de Jatsi"><span>JATSI</span><small>UNIVERSO</small></a><p>Hecho de sueños, mariposas y un poquito de caos.</p></div>
+      <div><a class="brand" href="#inicio" aria-label="Jatsi y Katsy, inicio"><img class="brand-mark" src="assets/jatsi-katsy-emblem.png" alt="Emblema ilustrado de Jatsi y Katsy"><span>JATSI × KATSY</span><small>VTUBERS</small></a><p>Hecho de sueños, mariposas y un poquito de caos.</p></div>
       <div><span>EXPLORA</span><a href="#experiencias">Experiencias</a><a href="#universo">Tu constelación</a><a href="#comunidad">Personalidades</a></div>
       <div><span>CONECTA</span><a href="https://discord.gg/zSmg8te5KY" target="_blank" rel="noopener noreferrer">Discord ↗</a><a href="https://www.twitch.tv/jatsi25" target="_blank" rel="noopener noreferrer">Twitch ↗</a><a href="https://www.tiktok.com/@jatsi_vt" target="_blank" rel="noopener noreferrer">TikTok ↗</a></div>
       <a class="back-top" href="#inicio">↑</a>
     </div>
-    <div class="shell footer-bottom"><span>© 2026 Jatsi Universe</span><span>Hecho en México · Transmitiendo al cosmos</span></div>
+    <div class="shell footer-bottom"><span>© 2026 Jatsi Universe</span><span>Hecho en México · Transmitiendo al cosmos</span><nav class="footer-legal" aria-label="Información legal"><a href="uso.html">Uso</a><a href="privacy.html">Privacidad</a><a href="terms.html">Términos</a></nav></div>
   </footer>
 
   <dialog class="modal activity-modal" id="activity-modal">
@@ -316,14 +374,14 @@
         </form>
         <button class="text-button" id="auth-mode-toggle" type="button">¿Primera vez? Crea tu constelación</button>
         <button class="demo-button" id="demo-login" type="button">Continuar en modo demostración</button>
-        <small class="privacy-note">Tus datos se usan solo para tu historial y participación. Nunca compartimos tu correo.</small>
+        <small class="privacy-note">Tu correo gestiona la cuenta y no se muestra a la comunidad. Si el backend está activo, Supabase lo procesa como proveedor de autenticación.</small>
       </div>
     </div>
   </dialog>
 
   <dialog class="dashboard" id="dashboard">
     <aside class="dashboard-sidebar">
-      <a class="brand" href="#inicio" data-close-dashboard><img class="brand-mark" src="assets/jatsi-logo.svg" alt="Símbolo de Jatsi"><span>JATSI</span><small>UNIVERSO</small></a>
+      <a class="brand" href="#inicio" data-close-dashboard aria-label="Jatsi y Katsy, inicio"><img class="brand-mark" src="assets/jatsi-katsy-emblem.png" alt="Emblema ilustrado de Jatsi y Katsy"><span>JATSI × KATSY</span><small>VTUBERS</small></a>
       <nav id="dashboard-nav"></nav>
       <div class="dashboard-user">
         <span class="user-avatar" id="dashboard-avatar">✦</span>
