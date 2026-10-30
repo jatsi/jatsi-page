@@ -731,6 +731,7 @@ footer{border-top:1px solid var(--line);padding:70px 0 24px;background:#070313}
 .auth-panel label>span,.admin-create label>span,.activity-form label>span{font-size:13px}
 .privacy-note,.activity-form .message-privacy-note{font-size:12px;line-height:1.6;color:#b7a9c8}
 .auth-panel .form-status,.admin-create .form-status{font-size:13px;line-height:1.5}
+.resend-confirmation[hidden]{display:none}
 .dashboard[open]{grid-template-columns:270px minmax(0,1fr)}
 .dashboard-sidebar nav button{font-size:14px;color:#b3a6c1;padding:13px 14px}
 .dashboard-user strong{font-size:14px}.dashboard-user small{font-size:12px;color:#9b8daa}

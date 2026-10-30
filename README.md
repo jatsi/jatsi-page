@@ -36,9 +36,13 @@ GitHub Pages publica archivos estáticos y no puede guardar usuarios ni mensajes
    - Project URL.
    - Publishable key (también puede aparecer como anon public en proyectos anteriores).
 4. Sustituye los valores de ejemplo en [config.js](config.js) con la URL del proyecto y su Publishable key. No uses la service_role key.
-5. Publica los cambios en GitHub Pages y confirma que el panel muestre la base de datos conectada.
-6. Regístrate desde la página con tu correo.
-7. Vuelve al SQL Editor y ejecuta la instrucción final de schema.sql, cambiando TU-CORREO@EJEMPLO.COM por tu correo. Eso convierte únicamente tu cuenta en administradora.
+5. En Authentication → URL Configuration, configura como **Site URL** `https://jatsi.github.io/jatsi-page/` y agrega esa misma dirección a **Redirect URLs**.
+6. En Authentication → Sign In / Providers → Email, deja activa la confirmación de correo.
+7. Publica los cambios en GitHub Pages y confirma que el panel muestre la base de datos conectada.
+8. Regístrate desde la página con tu correo. El enlace de confirmación debe volver a `https://jatsi.github.io/jatsi-page/`.
+9. Vuelve al SQL Editor y ejecuta la instrucción final de schema.sql, cambiando TU-CORREO@EJEMPLO.COM por tu correo. Eso convierte únicamente tu cuenta en administradora.
+
+El proveedor de correo de prueba de Supabase solo envía a integrantes de la organización y tiene límites bajos. Para permitir registros de seguidores con cualquier dirección, configura un proveedor SMTP personalizado en Authentication → SMTP Settings.
 
 La Publishable key está diseñada para usarse en el navegador. No uses nunca la service_role key en config.js. Si `config.js` conserva `TU-PROYECTO` y `TU-CLAVE-PUBLICABLE`, los mensajes reales no se guardan y el panel no puede recibirlos; la pantalla de administración lo indicará y no inventará mensajes de muestra.
 

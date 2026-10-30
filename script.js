@@ -366,11 +366,26 @@ function setAuthMode(mode) {
   $('#auth-form button[type="submit"]').innerHTML = register ? 'Crear mi cuenta <b>↗</b>' : 'Entrar al universo <b>↗</b>';
   $('#auth-mode-toggle').textContent = register ? 'Ya tengo constelación: quiero entrar' : '¿Primera vez? Crea tu constelación';
   $('#auth-status').textContent = '';
+  $('#resend-confirmation').hidden = true;
 }
 
 function openAuth() {
   setAuthMode('login');
   openDialog($('#auth-modal'));
+}
+
+function getEmailRedirectUrl() {
+  if (location.protocol === 'http:' || location.protocol === 'https:') return new URL('./', location.href).href;
+  return 'https://jatsi.github.io/jatsi-page/';
+}
+
+function readableAuthError(error) {
+  const message = String(error?.message || 'No pudimos completar el registro.');
+  if (/email_address_not_authorized/i.test(message)) return 'Supabase bloqueó el envío: su correo de prueba solo entrega a miembros de tu organización. Configura SMTP personalizado en Supabase para enviar a otros correos.';
+  if (/over_email_send_rate_limit|email rate limit/i.test(message)) return 'Supabase alcanzó el límite temporal de correos. Espera antes de solicitar otro o configura SMTP personalizado.';
+  if (/redirect.*not allowed|redirect_to/i.test(message)) return 'Supabase rechazó la redirección. Agrega ' + getEmailRedirectUrl() + ' en Authentication → URL Configuration → Redirect URLs.';
+  if (/otp_expired|link is invalid or has expired/i.test(message)) return 'El enlace de confirmación venció o ya se usó. Solicita un correo nuevo e intenta abrirlo una sola vez.';
+  return message;
 }
 
 $$('[data-open-auth]').forEach(button => button.addEventListener('click', openAuth));
@@ -386,6 +401,7 @@ $('#auth-form').addEventListener('submit', async event => {
   const displayName = String(data.get('display_name') || '').trim();
   const status = $('#auth-status');
   status.textContent = 'Abriendo el portal…';
+  $('#resend-confirmation').hidden = true;
 
   if (!state.supabase) {
     status.textContent = 'El acceso real aún no está conectado. Tus datos no llegarán a la base de datos; usa “Continuar en modo demostración” para probar el sitio.';
@@ -394,10 +410,18 @@ $('#auth-form').addEventListener('submit', async event => {
 
   try {
     if (state.authMode === 'register') {
-      const { data: result, error } = await state.supabase.auth.signUp({ email, password, options: { data: { display_name: displayName } } });
+      const { data: result, error } = await state.supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { display_name: displayName },
+          emailRedirectTo: getEmailRedirectUrl()
+        }
+      });
       if (error) throw error;
       if (!result.session) {
-        status.textContent = 'Revisa tu correo para confirmar la cuenta ✦';
+        status.textContent = 'Te enviamos un enlace a ' + email + '. Revisa también spam y promociones; al confirmarlo volverás a esta página.';
+        $('#resend-confirmation').hidden = false;
         return;
       }
     } else {
@@ -407,7 +431,24 @@ $('#auth-form').addEventListener('submit', async event => {
     closeDialog($('#auth-modal'));
     toast('Portal abierto. Bienvenid@ ✦');
   } catch (error) {
-    status.textContent = error.message || 'No pudimos abrir el portal.';
+    status.textContent = readableAuthError(error);
+  }
+});
+
+$('#resend-confirmation').addEventListener('click', async () => {
+  const email = String(new FormData($('#auth-form')).get('email') || '').trim();
+  const status = $('#auth-status');
+  if (!email || !state.supabase) {
+    status.textContent = 'Escribe tu correo y vuelve a intentarlo cuando la conexión esté activa.';
+    return;
+  }
+  status.textContent = 'Enviando otro enlace…';
+  try {
+    const { error } = await state.supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: getEmailRedirectUrl() } });
+    if (error) throw error;
+    status.textContent = 'Solicitamos otro enlace para ' + email + '. Revisa también spam y promociones.';
+  } catch (error) {
+    status.textContent = readableAuthError(error);
   }
 });
 
@@ -696,6 +737,17 @@ async function initSupabase() {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     state.supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     const { data } = await state.supabase.auth.getSession();
+    const callbackParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const callbackError = callbackParams.get('error_description') || callbackParams.get('error_code');
+    if (callbackError) {
+      setAuthMode('login');
+      $('#auth-status').textContent = readableAuthError({ message: callbackError });
+      openDialog($('#auth-modal'));
+      history.replaceState(null, '', location.pathname + location.search);
+    } else if (callbackParams.get('type') === 'signup' && data.session) {
+      toast('Correo confirmado. Tu cuenta ya está activa ✦');
+      history.replaceState(null, '', location.pathname + location.search);
+    }
     state.user = data.session?.user || null;
     if (state.user) await loadProfile();
     await loadActivities();
