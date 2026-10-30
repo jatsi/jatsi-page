@@ -24,7 +24,7 @@ Si tienes Python:
 
     python -m http.server 4173
 
-Después abre http://localhost:4173. Sin Supabase configurado, el sitio entra automáticamente en modo demostración y guarda las interacciones en el navegador.
+Después abre http://localhost:4173. Sin Supabase configurado, el sitio entra en modo de demostración: las actividades y respuestas se guardan únicamente en el navegador actual. No llegan al panel de otras personas ni a una base compartida.
 
 ## Activar usuarios, mensajes y analíticas reales
 
@@ -35,12 +35,12 @@ GitHub Pages publica archivos estáticos y no puede guardar usuarios ni mensajes
 3. En Project Settings → API, copia:
    - Project URL.
    - Publishable key (también puede aparecer como anon public en proyectos anteriores).
-4. Pega ambos valores en [config.js](config.js).
-5. Publica los cambios en GitHub Pages.
+4. Sustituye los valores de ejemplo en [config.js](config.js) con la URL del proyecto y su Publishable key. No uses la service_role key.
+5. Publica los cambios en GitHub Pages y confirma que el panel muestre la base de datos conectada.
 6. Regístrate desde la página con tu correo.
 7. Vuelve al SQL Editor y ejecuta la instrucción final de schema.sql, cambiando TU-CORREO@EJEMPLO.COM por tu correo. Eso convierte únicamente tu cuenta en administradora.
 
-La Publishable key está diseñada para usarse en el navegador. No uses nunca la service_role key en config.js.
+La Publishable key está diseñada para usarse en el navegador. No uses nunca la service_role key en config.js. Si `config.js` conserva `TU-PROYECTO` y `TU-CLAVE-PUBLICABLE`, los mensajes reales no se guardan y el panel no puede recibirlos; la pantalla de administración lo indicará y no inventará mensajes de muestra.
 
 ## Enlaces directos para Discord
 

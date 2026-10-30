@@ -72,18 +72,13 @@ const seedActivities = [
 
 const wheelPalette = ['#a96aff', '#42caeb', '#fa75bc', '#7251dc', '#efae66', '#5fe0c3', '#ff8a72', '#9db4ff', '#f1cf5c', '#b989ff', '#69d5a9', '#ee83e7'];
 
-const demoMessages = [
-  { id: 'demo-1', activity_id: seedActivities[2].id, user_id: null, kind: 'message', payload: { text: 'Tu comunidad se siente como un lugar seguro. Gracias por crearla ♡', anonymous: true }, created_at: new Date(Date.now() - 18 * 60000).toISOString(), demo: true },
-  { id: 'demo-2', activity_id: seedActivities[5].id, user_id: 'demo-fan', kind: 'question', payload: { text: '¿Qué personaje de anime te inspiró a empezar?', anonymous: false }, created_at: new Date(Date.now() - 74 * 60000).toISOString(), demo: true },
-  { id: 'demo-3', activity_id: seedActivities[2].id, user_id: null, kind: 'message', payload: { text: '¿Harías un stream dibujando con la comunidad?', anonymous: true }, created_at: new Date(Date.now() - 142 * 60000).toISOString(), demo: true }
-];
-
 const state = {
   supabase: null,
   user: null,
   profile: null,
   activities: [...seedActivities],
   interactions: [],
+  dataError: '',
   authMode: 'login',
   dashboardTab: 'overview',
   editingActivitySlug: '',
@@ -91,6 +86,7 @@ const state = {
 };
 
 const localKey = 'jatsi-universe-interactions';
+const localActivitiesKey = 'jatsi-universe-activities';
 const visitorKey = 'jatsi-universe-visitor';
 const visitorId = localStorage.getItem(visitorKey) || crypto.randomUUID();
 localStorage.setItem(visitorKey, visitorId);
@@ -103,6 +99,14 @@ function localInteractions() {
   return safeJSON(localStorage.getItem(localKey), []);
 }
 
+function localActivities() {
+  return safeJSON(localStorage.getItem(localActivitiesKey), []);
+}
+
+function saveLocalActivities(activities) {
+  localStorage.setItem(localActivitiesKey, JSON.stringify(activities.filter(item => !seedActivities.some(seed => seed.slug === item.slug))));
+}
+
 function saveLocalInteraction(interaction) {
   const current = localInteractions();
   current.unshift(interaction);
@@ -110,11 +114,31 @@ function saveLocalInteraction(interaction) {
 }
 
 function activityBySlug(slug) {
-  return state.activities.find(item => item.slug === slug) || seedActivities.find(item => item.slug === slug);
+  return state.activities.find(item => item.slug === slug);
 }
 
 function activityById(id) {
-  return state.activities.find(item => item.id === id) || seedActivities.find(item => item.id === id);
+  return state.activities.find(item => item.id === id);
+}
+
+function renderActivityCards() {
+  const grid = $('#activity-grid');
+  if (!grid) return;
+  const available = new Set(state.activities.map(item => item.slug));
+  $$('.activity-card:not([data-generated-activity])', grid).forEach(card => {
+    const button = $('[data-activity]', card);
+    if (button) card.hidden = !available.has(button.dataset.activity);
+  });
+  $$('[data-generated-activity]', grid).forEach(card => card.remove());
+  const knownSlugs = new Set($$('.activity-card:not([data-generated-activity]) [data-activity]', grid).map(button => button.dataset.activity));
+  state.activities.filter(item => !knownSlugs.has(item.slug)).forEach((activity, index) => {
+    const card = document.createElement('article');
+    card.className = 'activity-card reveal visible';
+    card.dataset.generatedActivity = activity.slug;
+    card.innerHTML = '<span class="card-number">' + String(knownSlugs.size + index + 1).padStart(2, '0') + '</span><div class="motion-emblem generated-activity-art"><i class="' + activityIconClass(activity.type) + '"></i><b>' + escapeHTML(activity.type.toUpperCase()) + ' · ACTIVIDAD</b></div><div class="activity-copy"><span class="activity-status">Nueva actividad</span><h3>' + escapeHTML(activity.title) + '</h3><p>' + escapeHTML(activity.description || 'Participa en esta experiencia de la comunidad.') + '</p><button class="card-action" type="button" data-activity="' + escapeHTML(activity.slug) + '">Participar <i class="iconoir-arrow-up-right"></i></button></div>';
+    $('[data-activity]', card).addEventListener('click', () => renderActivity(activity));
+    grid.append(card);
+  });
 }
 
 function escapeHTML(value = '') {
@@ -364,12 +388,7 @@ $('#auth-form').addEventListener('submit', async event => {
   status.textContent = 'Abriendo el portal…';
 
   if (!state.supabase) {
-    state.user = { id: 'demo-' + btoa(email).replace(/=/g, '').slice(0, 12), email };
-    state.profile = { display_name: displayName || email.split('@')[0] || 'Explorador', role: email.toLowerCase().startsWith('jatsi') || email.toLowerCase().includes('admin') ? 'admin' : 'user' };
-    updateAccountUI();
-    closeDialog($('#auth-modal'));
-    toast('Entraste en modo demostración');
-    openDashboard();
+    status.textContent = 'El acceso real aún no está conectado. Tus datos no llegarán a la base de datos; usa “Continuar en modo demostración” para probar el sitio.';
     return;
   }
 
@@ -412,21 +431,39 @@ async function loadProfile() {
 }
 
 async function loadActivities() {
-  if (!state.supabase) return;
+  if (!state.supabase) {
+    state.activities = [...seedActivities, ...localActivities()];
+    renderActivityCards();
+    return;
+  }
   const { data, error } = await state.supabase.from('activities').select('*').eq('is_active', true).order('created_at', { ascending: true });
-  if (!error && data?.length) state.activities = data;
+  if (error) {
+    console.error('No se pudieron cargar las actividades de Supabase:', error);
+    state.dataError = 'No se pudieron cargar las actividades. Revisa la conexión y permisos de Supabase.';
+    return;
+  }
+  state.activities = data || [];
+  state.dataError = '';
+  renderActivityCards();
 }
 
 async function loadInteractions(all = false) {
   if (!state.supabase) {
     const local = localInteractions();
-    state.interactions = state.profile?.role === 'admin' && all ? [...local, ...demoMessages] : local.filter(item => item.user_id === state.user?.id || item.visitor_id === visitorId);
+    state.interactions = state.profile?.role === 'admin' && all ? local : local.filter(item => item.user_id === state.user?.id || item.visitor_id === visitorId);
     return;
   }
   let query = state.supabase.from('interactions').select('*').order('created_at', { ascending: false }).limit(500);
   if (!all) query = query.eq('user_id', state.user.id);
   const { data, error } = await query;
-  state.interactions = error ? [] : data;
+  if (error) {
+    console.error('No se pudieron cargar las interacciones de Supabase:', error);
+    state.dataError = 'No se pudieron leer los mensajes. Confirma que el usuario tenga rol de administrador y que las políticas RLS estén instaladas.';
+    state.interactions = [];
+    return;
+  }
+  state.interactions = data || [];
+  state.dataError = '';
 }
 
 function dashboardNav() {
@@ -471,7 +508,8 @@ function metricCard(icon, label, value, detail) {
 function adminOverview() {
   const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind));
   const votes = state.interactions.filter(item => ['poll', 'either'].includes(item.kind));
-  return '<div class="metric-grid">' + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Datos disponibles') + metricCard('iconoir-chat-lines', 'MENSAJES', messages.length, messages.filter(item => Date.now() - new Date(item.created_at) < 86400000).length + ' hoy') + metricCard('iconoir-stats-up-square', 'VOTOS', votes.length, 'Encuestas activas') + metricCard('iconoir-playlist-play', 'ACTIVIDADES', state.activities.length, 'Publicadas') + '</div><div class="dashboard-grid"><section class="panel"><h3>Actividad reciente</h3>' + historyHTML(state.interactions.slice(0, 8)) + '</section><section class="panel"><h3>Estado del universo</h3><div class="history-item"><span><i class="iconoir-database-check"></i></span><div><strong>Base de datos</strong><small>' + (configured ? 'Conectada y protegida' : 'Modo demo local') + '</small></div><small class="status-pill">Activa</small></div><div class="history-item"><span><i class="iconoir-link"></i></span><div><strong>Enlaces</strong><small>Listos para Discord</small></div><small class="status-pill">OK</small></div></section></div>';
+  const databaseLabel = !configured ? 'No conectada · datos locales' : (state.dataError || 'Conectada');
+  return '<div class="metric-grid">' + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Datos disponibles') + metricCard('iconoir-chat-lines', 'MENSAJES', messages.length, messages.filter(item => Date.now() - new Date(item.created_at) < 86400000).length + ' hoy') + metricCard('iconoir-stats-up-square', 'VOTOS', votes.length, 'Encuestas activas') + metricCard('iconoir-playlist-play', 'ACTIVIDADES', state.activities.length, 'Publicadas') + '</div><div class="dashboard-grid"><section class="panel"><h3>Actividad reciente</h3>' + historyHTML(state.interactions.slice(0, 8)) + '</section><section class="panel"><h3>Estado del universo</h3><div class="history-item"><span><i class="iconoir-database-check"></i></span><div><strong>Base de datos</strong><small>' + escapeHTML(databaseLabel) + '</small></div><small class="status-pill ' + (configured && !state.dataError ? '' : 'status-local') + '">' + (configured && !state.dataError ? 'Conectada' : 'Pendiente') + '</small></div><div class="history-item"><span><i class="iconoir-link"></i></span><div><strong>Enlaces</strong><small>Listos para Discord</small></div><small class="status-pill">OK</small></div></section></div>';
 }
 
 function userOverview() {
@@ -521,7 +559,10 @@ async function renderDashboard() {
     analytics: analyticsPanel(),
     history: '<section class="panel"><h3>Todo tu historial</h3>' + historyHTML(state.interactions, 'Aún no has enviado nada.') + '</section>'
   };
-  $('#dashboard-content').innerHTML = views[state.dashboardTab] || views.overview;
+  const localNotice = !configured
+    ? '<div class="database-notice" role="status"><i class="iconoir-warning-triangle"></i><span><strong>La base de datos no está conectada.</strong> Los mensajes y actividades de prueba se guardan solo en este navegador; no recibimos ni mostramos los mensajes de otras personas. Configura Supabase en <code>config.js</code> y aplica <code>supabase/schema.sql</code>.</span></div>'
+    : (state.dataError ? '<div class="database-notice" role="alert"><i class="iconoir-warning-triangle"></i><span><strong>Problema al consultar Supabase.</strong> ' + escapeHTML(state.dataError) + '</span></div>' : '');
+  $('#dashboard-content').innerHTML = localNotice + (views[state.dashboardTab] || views.overview);
   $$('[data-open-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
     closeDialog($('#dashboard'));
     renderActivity(activityBySlug(button.dataset.openActivity));
@@ -580,10 +621,12 @@ async function createActivity(event) {
         Object.assign(update, saved);
       }
       state.activities = state.activities.map(item => item.slug === editingSlug ? update : item);
+      if (!state.supabase) saveLocalActivities(state.activities);
+      renderActivityCards();
       state.editingActivitySlug = '';
       state.dashboardTab = 'activities';
       await renderDashboard();
-      toast('La ruleta y su leyenda ya están actualizadas.');
+      toast(state.supabase ? 'Actividad actualizada en la base de datos.' : 'Actividad actualizada en este navegador.');
     } catch (error) {
       status.textContent = error.message || 'No pudimos guardar los cambios.';
     }
@@ -610,9 +653,11 @@ async function createActivity(event) {
       state.activities.push(saved);
     } else {
       state.activities.push(activity);
+      saveLocalActivities(state.activities);
     }
+    renderActivityCards();
     form.reset();
-    status.textContent = 'Actividad publicada. Ya puedes compartir su enlace ✦';
+    status.textContent = state.supabase ? 'Actividad guardada en la base de datos. Ya puedes compartir su enlace ✦' : 'Actividad guardada solo en este navegador. Para compartirla con todos, conecta Supabase.';
   } catch (error) {
     status.textContent = error.message || 'No pudimos publicar la actividad.';
   }
