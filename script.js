@@ -271,10 +271,12 @@ async function recordInteraction(activity, kind, payload) {
       kind: interaction.kind,
       payload: interaction.payload
     };
-    const { data, error } = await state.supabase.from('interactions').insert(row).select().single();
+    // Anonymous visitors may insert messages, but RLS intentionally prevents
+    // them from selecting interactions. Requesting .select() here made a valid
+    // insert fail as soon as PostgREST tried to return the private row.
+    const { error } = await state.supabase.from('interactions').insert(row);
     if (error) throw error;
-    state.interactions.unshift(data);
-    return data;
+    return interaction;
   }
 
   saveLocalInteraction(interaction);
@@ -335,10 +337,28 @@ async function sendMessage(event, activity) {
     const displayName = String(data.get('display_name') || '').trim().slice(0, 40);
     await recordInteraction(activity, activity.type, { text, display_name: displayName || null, anonymous: !displayName });
     form.reset();
-    status.textContent = 'Llegó al universo de Jatsi. Gracias por compartir ♡';
-  } catch {
-    status.textContent = 'No pudimos enviarlo. Revisa tu conexión e intenta otra vez.';
+    status.textContent = state.supabase
+      ? 'Mensaje enviado al buzón privado. Gracias por compartir ♡'
+      : 'Guardado solo en este navegador de demostración; conecta Supabase para enviarlo al buzón de Jatsi.';
+  } catch (error) {
+    console.error('No se pudo guardar el mensaje del buzón:', error);
+    status.textContent = writeErrorMessage(error, 'el mensaje');
   }
+}
+
+function writeErrorMessage(error, itemName) {
+  const code = String(error?.code || '');
+  const message = String(error?.message || 'Error desconocido');
+  if (code === '42501' || /row-level security|permission denied/i.test(message)) {
+    return 'Supabase rechazó el guardado por permisos. Revisa que ejecutaste el esquema completo y que la actividad siga activa.';
+  }
+  if (code === '23503' || /foreign key/i.test(message)) {
+    return 'La actividad no está sincronizada con la base de datos. Actualiza la página y vuelve a intentarlo.';
+  }
+  if (/failed to fetch|network|fetch error/i.test(message)) {
+    return 'No pudimos conectar con Supabase. Revisa tu conexión e intenta otra vez.';
+  }
+  return 'No se pudo guardar ' + itemName + ': ' + message;
 }
 
 async function consultOracle(activity) {
