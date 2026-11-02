@@ -98,18 +98,38 @@ if (planCatalog.length !== 160) throw new Error(`El catálogo debe tener 160 com
 let plan;
 let entries;
 async function supabaseRequest(path, init = {}) {
-  const response = await fetch(`${supabaseUrl}${path}`, {
-    ...init,
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      ...(init.body instanceof Uint8Array ? {} : { 'Content-Type': 'application/json' }),
-      ...init.headers
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`${supabaseUrl}${path}`, {
+        ...init,
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          ...(init.body instanceof Uint8Array ? {} : { 'Content-Type': 'application/json' }),
+          ...init.headers
+        }
+      });
+      const body = await response.text();
+      if (response.ok) return body ? JSON.parse(body) : null;
+
+      const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+      if (!retryable || attempt === maxAttempts) {
+        throw new Error(`Supabase devolvió ${response.status}: ${body.slice(0, 600)}`);
+      }
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 15000)
+        : attempt * 3000;
+      console.warn(`Supabase devolvió ${response.status}; reintento ${attempt + 1}/${maxAttempts} en ${delayMs / 1000}s.`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    } catch (error) {
+      if (attempt === maxAttempts || String(error.message).startsWith('Supabase devolvió ')) throw error;
+      const delayMs = attempt * 3000;
+      console.warn(`No se pudo conectar con Supabase; reintento ${attempt + 1}/${maxAttempts} en ${delayMs / 1000}s: ${error.message}`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
-  });
-  const body = await response.text();
-  if (!response.ok) throw new Error(`Supabase devolvió ${response.status}: ${body.slice(0, 600)}`);
-  return body ? JSON.parse(body) : null;
+  }
 }
 
 async function loadWeeklyHistory() {
