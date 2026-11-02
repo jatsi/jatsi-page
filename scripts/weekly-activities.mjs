@@ -3,7 +3,7 @@ import sharp from 'sharp';
 const required = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
-  'DISCORD_WEBHOOK_URL',
+  'COMMUNITY_WEBHOOK_URL',
   'INSTAGRAM_USER_ID',
   'INSTAGRAM_ACCESS_TOKEN'
 ];
@@ -26,74 +26,39 @@ const isoWeek = Math.ceil((((isoDate - new Date(Date.UTC(isoYear, 0, 1))) / 8640
 const weekKey = `${isoYear}-W${String(isoWeek).padStart(2, '0')}`;
 const safeWeek = weekKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
-const seasons = [
-  {
-    poll: { title: '¿Qué aventura abrimos en el próximo directo?', options: ['Noche de terror', 'Un juego cozy', 'Gaming con la comunidad', 'Charla y confesiones'] },
-    wheel: { title: 'Reto cósmico de la semana', options: ['Hablar como NPC', 'Jugar sin saltar', 'El chat elige mi outfit', 'Imitar a mi personaje favorito', 'Contar una anécdota', 'Una ronda con los ojos cerrados'] }
-  },
-  {
-    poll: { title: '¿Qué mood quieres para el stream?', options: ['Caos y risas', 'Misterio y sustos', 'Relajarnos juntas', 'Competencia intensa'] },
-    wheel: { title: 'La comunidad pone el reto', options: ['No reír por un minuto', 'Narrar como documental', 'Ronda con una mano', 'Inventar una historia', 'Hacer una voz nueva', 'Chat elige la dificultad'] }
-  },
-  {
-    poll: { title: '¿Qué formato hacemos esta semana?', options: ['Tier list inesperada', 'Probamos algo nuevo', 'Q&A estelar', 'Reto de la comunidad'] },
-    wheel: { title: 'Desafío para el siguiente directo', options: ['Leer el chat con voz dramática', 'Elegir juego al azar', 'Ronda sin curarse', 'Agradecer a una estrella del chat', 'Improvisar una canción', 'Modo difícil'] }
-  },
-  {
-    poll: { title: '¿Con quién te unes a la próxima aventura?', options: ['Jatsi en modo caos', 'Katsy en modo cozy', 'Las dos en crossover', 'Que el chat decida'] },
-    wheel: { title: 'Gira y cumple el destino', options: ['Bailecito de victoria', 'Imitar a Katsy', 'Imitar a Jatsi', 'Compartir un dato random', 'Hacer una pose épica', 'Chat elige el reto'] }
-  },
-  {
-    poll: { title: 'Elige el próximo universo', options: ['Terror psicológico', 'Fantasía y magia', 'Anime y teorías', 'Indies raritos'] },
-    wheel: { title: 'Una misión nueva', options: ['Prohibido decir “no”', 'Una ronda sin mapa', 'Usar un objeto inútil', 'Voz de villana', 'Chat decide la ruta', 'Revancha obligatoria'] }
-  },
-  {
-    poll: { title: '¿Qué hacemos juntas en comunidad?', options: ['Juego cooperativo', 'Historias del chat', 'Noche de clips', 'Concurso de dibujos'] },
-    wheel: { title: 'Reto para compartir', options: ['Chat escoge mi personaje', 'Inventar un apodo cósmico', 'Leer un mensaje bonito', 'Reto sin correr', 'Mini trivia VTuber', 'Todos eligen el juego'] }
-  },
-  {
-    poll: { title: '¿Qué merece un especial?', options: ['Juegos que dan miedo', 'Fails y momentos', 'Preguntas atrevidas', 'Una sorpresa para el chat'] },
-    wheel: { title: 'Especial sorpresa', options: ['Repetir el último reto', 'Una ronda con handicap', 'Contar el peor fail', 'Hacer una voz tierna', 'Chat pone una regla', 'Sorpresa del cosmos'] }
-  },
-  {
-    poll: { title: '¿Qué quieres ver más en Jatsi y Katsy?', options: ['Clips divertidos', 'Directos relajados', 'Retos del chat', 'Historias y lore'] },
-    wheel: { title: 'El chat escribe el guion', options: ['El chat elige mi saludo', 'Modo narradora', 'Una ronda con reto', 'Compartir un recuerdo', 'Elegir el siguiente juego', 'Final dramático'] }
-  }
+const topics = [
+  { id: 'terror', label: 'la noche de terror', pollOptions: ['Terror psicológico', 'Casa embrujada', 'Criaturas extrañas', 'Historias del chat'], wheelOptions: ['Juega sin mirar el mapa', 'Narra el susto como telenovela', 'Deja que el chat elija la ruta', 'Haz una pausa dramática', 'Imita al monstruo', 'Cuenta tu leyenda urbana'] },
+  { id: 'cozy', label: 'el stream cozy', pollOptions: ['Juego de granjita', 'Decoramos juntas', 'Charla con cafecito', 'Aventura relajada'], wheelOptions: ['Diseña una habitación', 'Ponle nombre a una mascota', 'Cuenta tu plan perfecto', 'Haz una recomendación cozy', 'Elige el próximo objeto', 'Inventa una mini historia'] },
+  { id: 'gaming', label: 'el próximo reto gaming', pollOptions: ['Una partida cooperativa', 'Modo difícil', 'Juego indie sorpresa', 'El chat decide el juego'], wheelOptions: ['Juega una ronda sin saltar', 'Usa el objeto menos popular', 'Deja que el chat elija personaje', 'Haz la siguiente misión sin mapa', 'Prueba una estrategia absurda', 'Revancha con una regla nueva'] },
+  { id: 'anime', label: 'la noche de anime', pollOptions: ['Teorías locas', 'Tier list de personajes', 'Adivina el opening', 'Recomendaciones del chat'], wheelOptions: ['Defiende a un personaje impopular', 'Inventa un opening para el canal', 'Haz una pose de protagonista', 'Crea un poder para Katsy', 'Describe un anime en tres pistas', 'El chat elige tu personaje'] },
+  { id: 'comunidad', label: 'el plan de la comunidad', pollOptions: ['Jugar con seguidores', 'Noche de clips', 'Preguntas y respuestas', 'Concurso de dibujos'], wheelOptions: ['Lee un mensaje con voz épica', 'El chat inventa un apodo', 'Responde una pregunta sorpresa', 'Recrea un momento del canal', 'Agradece a una estrella del chat', 'Propón el siguiente juego'] },
+  { id: 'lore', label: 'el lore de Jatsi y Katsy', pollOptions: ['Una historia de Jatsi', 'Un secreto de Katsy', 'Crossover inesperado', 'Que el chat escriba el final'], wheelOptions: ['Inventa un planeta nuevo', 'Cuenta un recuerdo del portal', 'Crea un villano para el lore', 'El chat elige el siguiente capítulo', 'Ponle nombre a una constelación', 'Improvisa un final dramático'] },
+  { id: 'clips', label: 'la noche de clips', pollOptions: ['Fails legendarios', 'Momentos tiernos', 'Reacciones inesperadas', 'Clips enviados por el chat'], wheelOptions: ['Recrea un fail famoso', 'Ponle narración de documental', 'Inventa un título para el clip', 'El chat escoge la siguiente reacción', 'Haz una predicción antes de verlo', 'Cuenta el detrás de cámaras'] },
+  { id: 'roleplay', label: 'la aventura de rol', pollOptions: ['Misterio detectivesco', 'Fantasía mágica', 'Comedia caótica', 'Ciencia ficción'], wheelOptions: ['Interpreta a una villana elegante', 'Crea un hechizo en vivo', 'Habla como NPC por una ronda', 'Deja que el chat elija tu misión', 'Inventa un objeto legendario', 'Improvisa una escena de escape'] },
+  { id: 'vtuber', label: 'el especial VTuber', pollOptions: ['Preguntas del chat', 'Dibujo de avatar', 'Mímica de emociones', 'Historias del modelo'], wheelOptions: ['Haz una pose de victoria', 'Imita una expresión del avatar', 'Inventa un accesorio nuevo', 'Cuenta un dato del modelo', 'El chat elige una emoción', 'Describe tu avatar como jefa final'] },
+  { id: 'musica', label: 'la sesión musical', pollOptions: ['Adivina la canción', 'Opening de anime', 'Playlist del chat', 'Karaoke de broma'], wheelOptions: ['Tararea una canción para adivinar', 'Inventa una letra para el canal', 'Haz una entrada de estrella pop', 'El chat elige el siguiente género', 'Describe una canción sin nombrarla', 'Dedica una melodía al chat'] },
+  { id: 'preguntas', label: 'la charla de preguntas', pollOptions: ['Preguntas divertidas', 'Historias vergonzosas', 'Metas de la comunidad', 'Confesiones ligeras'], wheelOptions: ['Responde con una sola palabra', 'Cuenta una anécdota en un minuto', 'Deja que el chat haga una pregunta', 'Responde como Katsy', 'Responde como Jatsi', 'Inventa una pregunta para el chat'] },
+  { id: 'competencia', label: 'el torneo amistoso', pollOptions: ['Duelo Jatsi contra Katsy', 'Reto por equipos', 'Chat contra streamer', 'Mini campeonato sorpresa'], wheelOptions: ['Juega la siguiente ronda con handicap', 'El chat elige tu rival', 'Celebra como campeona', 'Haz una revancha relámpago', 'Ponle nombre al torneo', 'Predice quién gana la próxima ronda'] },
+  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'], wheelOptions: ['Saluda como duende', 'Cuenta un recuerdo bonito', 'Elige un reto bajo el árbol', 'Haz una pose de postal', 'Inventa un regalo para el chat', 'Brinda virtualmente con la comunidad'] }
 ];
-
-const christmas = [
-  {
-    poll: { title: '¿Qué especial navideño hacemos juntas?', options: ['Juegos cozy', 'Noche de terror', 'Intercambio de historias', 'Reto con el chat'] },
-    wheel: { title: 'Ruleta de retos navideños', options: ['Saludo de duende', 'Contar un recuerdo bonito', 'Elegir canción festiva', 'Imitar a un reno', 'Pose de postal', 'Chat decide el reto'] }
-  },
-  {
-    poll: { title: '¿Qué regalo de stream te gustaría?', options: ['Q&A navideño', 'Juegos con seguidores', 'Reacción a clips', 'Un directo sorpresa'] },
-    wheel: { title: 'Sorpresa bajo el árbol', options: ['Una ronda cozy', 'Reto sin reír', 'Mensaje bonito para el chat', 'Voz de personaje', 'El chat elige el juego', 'Regalo sorpresa'] }
-  },
-  {
-    poll: { title: '¿Con qué cerramos el año?', options: ['Maratón de juegos', 'Recuerdos del año', 'Noche de comunidad', 'Metas para el próximo'] },
-    wheel: { title: 'Última ruleta del año', options: ['Agradecer al chat', 'Elegir el primer juego del año', 'Recordar un fail', 'Brindis virtual', 'Reto final', 'Deseo para la comunidad'] }
-  },
-  {
-    poll: { title: '¿Cuál sería tu plan perfecto de invierno?', options: ['Juego cozy', 'Terror bajo cobija', 'Chocolate y charla', 'Reto de temporada'] },
-    wheel: { title: 'Un reto calentito', options: ['Voz de duende', 'Contar una anécdota', 'Jugar con una regla nueva', 'Leer el chat como poema', 'Pose invernal', 'Sorpresa del cosmos'] }
-  }
+const pollFormats = [
+  { id: 'plan', question: topic => `¿Qué hacemos en ${topic.label}?`, wheelTitle: topic => `Ruleta: ${topic.label}`, prefix: '' },
+  { id: 'mood', question: topic => `¿Con qué mood abrimos ${topic.label}?`, wheelTitle: topic => `Reto relámpago: ${topic.label}`, prefix: 'En 30 segundos: ' },
+  { id: 'community', question: topic => `¿Cómo quieres participar en ${topic.label}?`, wheelTitle: topic => `La comunidad decide: ${topic.label}`, prefix: 'Con voz de narradora: ' },
+  { id: 'twist', question: topic => `¿Qué giro le ponemos a ${topic.label}?`, wheelTitle: topic => `Giro inesperado: ${topic.label}`, prefix: 'Con una regla inventada por el chat: ' }
 ];
-
-const plan = month === 12 ? christmas[(isoWeek - 1) % christmas.length] : seasons[(isoWeek - 1) % seasons.length];
-const entries = [
-  {
-    slug: `jatsi-semana-${safeWeek}-encuesta`, type: 'poll', title: plan.poll.title,
-    description: 'La comunidad decide el próximo plan de Jatsi y Katsy. Vota y ayúdanos a abrir la siguiente aventura.',
-    config: { options: plan.poll.options, campaign: 'weekly', week: weekKey }
-  },
-  {
-    slug: `jatsi-semana-${safeWeek}-ruleta`, type: 'wheel', title: plan.wheel.title,
-    description: 'Gira la ruleta: el chat propone el destino y Jatsi o Katsy acepta el reto en directo.',
-    config: { options: plan.wheel.options, campaign: 'weekly', week: weekKey }
-  }
+const pollAlternatives = [
+  ['Caos y risas', 'Misterio y sustos', 'Relajarnos juntas', 'Competencia intensa'],
+  ['El chat escoge el reto', 'Jugamos en equipo', 'Votamos por rondas', 'Sorpresa al final'],
+  ['Cambio de reglas', 'Ruleta sorpresa', 'Crossover Jatsi × Katsy', 'Final elegido por el chat']
 ];
-
+const planCatalog = topics.flatMap(topic => pollFormats.map((format, index) => ({
+  id: `${topic.id}-${format.id}`,
+  poll: { title: format.question(topic), options: index === 0 ? topic.pollOptions : pollAlternatives[index - 1] },
+  wheel: { title: format.wheelTitle(topic), options: topic.wheelOptions.map(option => `${format.prefix}${option}`) }
+})));
+let plan;
+let entries;
 async function supabaseRequest(path, init = {}) {
   const response = await fetch(`${supabaseUrl}${path}`, {
     ...init,
@@ -109,6 +74,42 @@ async function supabaseRequest(path, init = {}) {
   return body ? JSON.parse(body) : null;
 }
 
+async function loadWeeklyHistory() {
+  const activities = [];
+  for (let offset = 0; ; offset += 1000) {
+    const query = new URLSearchParams({
+      select: 'slug,config',
+      'slug': 'like.jatsi-semana-*',
+      limit: '1000',
+      offset: String(offset)
+    });
+    const batch = await supabaseRequest(`/rest/v1/activities?${query}`);
+    activities.push(...batch);
+    if (batch.length < 1000) return activities;
+  }
+}
+
+const weeklyHistory = (await loadWeeklyHistory()).filter(activity => activity.config?.campaign === 'weekly');
+const weekPollSlug = `jatsi-semana-${safeWeek}-encuesta`;
+const alreadyThisWeek = weeklyHistory.find(activity => activity.slug === weekPollSlug)?.config?.plan_id;
+const usedPlanIds = new Set(weeklyHistory.map(activity => activity.config?.plan_id).filter(Boolean));
+plan = planCatalog.find(candidate => candidate.id === alreadyThisWeek)
+  || planCatalog.find(candidate => !usedPlanIds.has(candidate.id));
+if (!plan) {
+  throw new Error(`Se agotaron las ${planCatalog.length} ideas semanales sin repetir. No se activó ni publicó nada; agrega nuevas ideas al catálogo antes de la siguiente rotación.`);
+}
+entries = [
+  {
+    slug: weekPollSlug, type: 'poll', title: plan.poll.title,
+    description: 'La comunidad decide el próximo plan de Jatsi y Katsy. Vota y ayúdanos a abrir la siguiente aventura.',
+    config: { options: plan.poll.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+  },
+  {
+    slug: `jatsi-semana-${safeWeek}-ruleta`, type: 'wheel', title: plan.wheel.title,
+    description: 'Gira la ruleta: el chat propone el destino y Jatsi o Katsy acepta el reto en directo.',
+    config: { options: plan.wheel.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+  }
+];
 async function publishStoryImage() {
   const svg = makeStorySvg(plan.poll.title, plan.wheel.title, weekKey);
   const jpeg = await sharp(Buffer.from(svg)).resize(1080, 1920).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
@@ -162,7 +163,7 @@ function makeStorySvg(pollTitle, wheelTitle, week) {
 }
 
 async function postDiscord() {
-  const response = await fetch(process.env.DISCORD_WEBHOOK_URL, {
+  const response = await fetch(process.env.COMMUNITY_WEBHOOK_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       content: `✦ ¡Actividades nuevas en la página de Jatsi y Katsy! ${weekKey}`,

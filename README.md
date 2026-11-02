@@ -90,13 +90,13 @@ Para un lanzamiento público conviene activar confirmación de correo, protecci�
 
 ## Rotación semanal y avisos
 
-El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Crea una encuesta y una ruleta, desactiva solo las actividades anteriores que creó la propia rotación y anuncia el cambio en Discord y como una historia de Instagram. En diciembre el contenido pasa a una selección navideña. Los resultados históricos se conservan.
+El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Consulta en Supabase qué ideas ya usó y elige una combinación nueva de un catálogo de 52 semanas. Guarda la encuesta y la ruleta en `activities`, pausa solo las actividades automáticas de semanas anteriores y anuncia el cambio en Discord y como una historia de Instagram. Las respuestas históricas se conservan. Cuando se agote el catálogo, el flujo se detendrá antes de publicar una actividad repetida; habrá que añadir ideas nuevas.
 
 Para activarlo una sola vez:
 
 1. En GitHub abre **jatsi/jatsi-page → Settings → Secrets and variables → Actions → New repository secret**.
 2. Agrega `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` desde el panel del proyecto Supabase. La clave `service_role` es privada: úsala solo como secreto de Actions; nunca en `config.js`.
-3. Crea un webhook en el canal de anuncios de tu servidor Discord y guárdalo como `DISCORD_WEBHOOK_URL`.
+3. Crea un webhook en el canal de anuncios de tu servidor Discord y guarda la URL completa (normalmente `https://discord.com/api/webhooks/...`) como `COMMUNITY_WEBHOOK_URL`. El nombre es solo una etiqueta; el valor debe ser la URL del webhook, no la invitación del servidor ni el enlace normal del canal.
 4. Agrega `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN` de tu cuenta profesional de Instagram Business con los permisos de publicación de contenido.
 5. Abre **Actions → Actividades semanales** y pulsa **Run workflow** para comprobar la primera publicación. Ese botón también crea actividades y publica avisos reales.
 
