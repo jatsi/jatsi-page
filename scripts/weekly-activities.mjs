@@ -1,18 +1,13 @@
-import sharp from 'sharp';
-
 const required = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'COMMUNITY_WEBHOOK_URL',
-  'INSTAGRAM_USER_ID',
-  'INSTAGRAM_ACCESS_TOKEN'
 ];
 const missing = required.filter(name => !process.env[name]);
 if (missing.length) throw new Error(`Faltan secretos requeridos: ${missing.join(', ')}. No se cambió ni publicó nada.`);
 
 const supabaseUrl = process.env.SUPABASE_URL.replace(/\/$/, '');
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const graphVersion = process.env.META_GRAPH_API_VERSION || 'v25.0';
 const pageUrl = 'https://jatsi.github.io/jatsi-page/#experiencias';
 const mexicoDate = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -110,58 +105,6 @@ entries = [
     config: { options: plan.wheel.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
   }
 ];
-async function publishStoryImage() {
-  const svg = makeStorySvg(plan.poll.title, plan.wheel.title, weekKey);
-  const jpeg = await sharp(Buffer.from(svg)).resize(1080, 1920).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
-  const bucketName = 'weekly-ig-stories';
-  const bucket = await fetch(`${supabaseUrl}/storage/v1/bucket/${bucketName}`, {
-    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
-  });
-  if (bucket.status === 404) {
-    const create = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
-      method: 'POST',
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: bucketName, public: true, file_size_limit: 5242880, allowed_mime_types: ['image/jpeg'] })
-    });
-    if (!create.ok && create.status !== 409) throw new Error(`No se pudo crear el espacio de imágenes (${create.status}).`);
-  } else if (!bucket.ok) {
-    throw new Error(`No se pudo revisar el espacio de imágenes (${bucket.status}).`);
-  } else {
-    const details = await bucket.json();
-    if (!details.public) throw new Error(`El espacio ${bucketName} ya existe, pero no es público. Cambia su acceso a público en Supabase Storage.`);
-  }
-  const objectPath = `activity-${safeWeek}.jpg`;
-  const upload = await fetch(`${supabaseUrl}/storage/v1/object/${bucketName}/${objectPath}`, {
-    method: 'PUT',
-    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
-    body: jpeg
-  });
-  if (!upload.ok) throw new Error(`No se pudo subir la imagen de Instagram (${upload.status}).`);
-  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${objectPath}`;
-}
-
-function makeStorySvg(pollTitle, wheelTitle, week) {
-  const xml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[character]);
-  const wrap = (value, max = 29) => {
-    const words = value.split(/\s+/); const lines = []; let line = '';
-    for (const word of words) {
-      if ((line + ' ' + word).trim().length > max && line) { lines.push(line); line = word; }
-      else line = (line + ' ' + word).trim();
-    }
-    if (line) lines.push(line);
-    return lines.slice(0, 3);
-  };
-  const pollLines = wrap(pollTitle);
-  const wheelLines = wrap(wheelTitle, 35);
-  const textLines = (lines, x, y, size, fill, weight = 600) => lines.map((line, index) => `<text x="${x}" y="${y + index * (size + 12)}" font-size="${size}" font-weight="${weight}" fill="${fill}">${xml(line)}</text>`).join('');
-  const stars = Array.from({ length: 34 }, (_, index) => {
-    const x = (index * 277 + 71) % 1000 + 40; const y = (index * 619 + 83) % 1750 + 45;
-    const r = index % 7 === 0 ? 3.3 : 1.5;
-    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${index % 3 === 0 ? '#8cecff' : '#f2d5ff'}" opacity="${index % 7 === 0 ? '.75' : '.37'}"/>`;
-  }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920"><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#160d2c"/><stop offset=".53" stop-color="#291642"/><stop offset="1" stop-color="#0d1c35"/></linearGradient><radialGradient id="glow"><stop stop-color="#a76dff" stop-opacity=".55"/><stop offset="1" stop-color="#a76dff" stop-opacity="0"/></radialGradient><linearGradient id="card" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".13"/><stop offset="1" stop-color="#ffffff" stop-opacity=".035"/></linearGradient><linearGradient id="accent"><stop stop-color="#ffb7df"/><stop offset="1" stop-color="#9aeaff"/></linearGradient></defs><rect width="1080" height="1920" fill="url(#bg)"/><circle cx="820" cy="390" r="560" fill="url(#glow)"/><circle cx="180" cy="1430" r="500" fill="url(#glow)" opacity=".55"/>${stars}<rect x="55" y="62" width="970" height="1796" rx="46" fill="none" stroke="#e9d9ff" stroke-opacity=".17"/><g font-family="Arial, sans-serif"><text x="100" y="160" fill="#aeeeff" font-size="24" letter-spacing="7" font-weight="700">JATSI × KATSY</text><text x="100" y="246" fill="#ffdaec" font-size="20" letter-spacing="5">${xml(week)} · PORTAL SEMANAL</text><text x="100" y="398" fill="#fff7ff" font-size="82" font-weight="800" letter-spacing="-3">ACTIVIDADES</text><text x="100" y="493" fill="url(#accent)" font-size="82" font-weight="800" letter-spacing="-3">NUEVAS ✦</text><text x="100" y="570" fill="#b9aecb" font-size="27">La comunidad elige la próxima aventura.</text><rect x="84" y="668" width="912" height="496" rx="32" fill="url(#card)" stroke="#d9c8f5" stroke-opacity=".28"/><rect x="122" y="713" width="268" height="49" rx="24" fill="#71e5f4" fill-opacity=".13" stroke="#71e5f4" stroke-opacity=".34"/><text x="150" y="746" fill="#a5f2ff" font-size="17" font-weight="700" letter-spacing="3">01 / ENCUESTA</text>${textLines(pollLines, 128, 838, 36, '#fff4ff', 700)}<text x="128" y="1050" fill="#bbaac9" font-size="21">Tu voto ayuda a elegir el siguiente stream.</text><rect x="84" y="1205" width="912" height="385" rx="32" fill="url(#card)" stroke="#d9c8f5" stroke-opacity=".28"/><rect x="122" y="1250" width="226" height="49" rx="24" fill="#b988ff" fill-opacity=".16" stroke="#b988ff" stroke-opacity=".38"/><text x="150" y="1283" fill="#ddc4ff" font-size="17" font-weight="700" letter-spacing="3">02 / RULETA</text>${textLines(wheelLines, 128, 1375, 31, '#fff4ff', 700)}<text x="128" y="1513" fill="#bbaac9" font-size="21">Gira y deja que el cosmos decida el reto.</text><rect x="84" y="1653" width="912" height="119" rx="26" fill="url(#accent)"/><text x="540" y="1707" text-anchor="middle" fill="#251333" font-size="19" font-weight="700" letter-spacing="3">VOTA · GIRA · JUEGA CON NOSOTRAS</text><text x="540" y="1744" text-anchor="middle" fill="#251333" font-size="17">jatsi.github.io/jatsi-page · link en bio</text><text x="100" y="1814" fill="#9d91ae" font-size="16" letter-spacing="3">UNA COMUNIDAD. MUCHAS FORMAS DE JUGAR.</text></g></svg>`;
-}
-
 async function postDiscord() {
   const response = await fetch(process.env.COMMUNITY_WEBHOOK_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -179,18 +122,6 @@ async function postDiscord() {
   if (!response.ok) throw new Error(`Discord no aceptó el aviso (${response.status}).`);
 }
 
-async function postInstagramStory(imageUrl) {
-  const graph = `https://graph.facebook.com/${graphVersion}`;
-  const form = new URLSearchParams({ media_type: 'STORIES', image_url: imageUrl, access_token: process.env.INSTAGRAM_ACCESS_TOKEN });
-  const create = await fetch(`${graph}/${process.env.INSTAGRAM_USER_ID}/media`, { method: 'POST', body: form });
-  const container = await create.json();
-  if (!create.ok || !container.id) throw new Error(`Instagram no pudo preparar la historia (${create.status}): ${container.error?.message || 'respuesta sin identificador'}`);
-  const publishForm = new URLSearchParams({ creation_id: container.id, access_token: process.env.INSTAGRAM_ACCESS_TOKEN });
-  const publish = await fetch(`${graph}/${process.env.INSTAGRAM_USER_ID}/media_publish`, { method: 'POST', body: publishForm });
-  const published = await publish.json();
-  if (!publish.ok || !published.id) throw new Error(`Instagram no publicó la historia (${publish.status}): ${published.error?.message || 'respuesta sin identificador'}`);
-}
-
 const currentPrefix = `jatsi-semana-${safeWeek}-`;
 const oldCampaigns = await supabaseRequest('/rest/v1/activities?select=id,slug&slug=like.jatsi-semana-%&is_active=eq.true');
 await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
@@ -202,10 +133,5 @@ for (const activity of oldCampaigns.filter(item => !item.slug.startsWith(current
     method: 'PATCH', body: JSON.stringify({ is_active: false })
   });
 }
-const announcements = await Promise.allSettled([
-  postDiscord(),
-  publishStoryImage().then(postInstagramStory)
-]);
-const announcementErrors = announcements.filter(result => result.status === 'rejected').map(result => result.reason?.message || 'Error al anunciar.');
-if (announcementErrors.length) throw new Error(`Las actividades quedaron activas para ${weekKey}, pero hubo un problema con los avisos: ${announcementErrors.join(' | ')}`);
-console.log(`Semana ${weekKey}: encuesta y ruleta activadas; aviso de Discord e historia de Instagram publicados.`);
+await postDiscord();
+console.log(`Semana ${weekKey}: encuesta y ruleta activadas; aviso publicado en Discord.`);

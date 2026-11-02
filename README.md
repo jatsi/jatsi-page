@@ -15,7 +15,7 @@ Experiencia web inmersiva para Jatsi, que presenta sus dos personalidades: Jatsi
 - Resumen administrativo con actividad diaria, participantes, votos y giros.
 - Creación de nuevas actividades desde el panel.
 - Datos en tiempo real cuando Supabase está conectado.
-- Rotación semanal opcional de encuesta y ruleta, con avisos automáticos en Discord e Instagram Stories.
+- Rotación semanal opcional de encuesta y ruleta, con avisos automáticos en Discord.
 - Preferencia de movimiento reducido y navegación con teclado.
 
 ## Probarla en tu computadora
@@ -90,17 +90,16 @@ Para un lanzamiento público conviene activar confirmación de correo, protecci�
 
 ## Rotación semanal y avisos
 
-El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Consulta en Supabase qué ideas ya usó y elige una combinación nueva de un catálogo de 52 semanas. Guarda la encuesta y la ruleta en `activities`, pausa solo las actividades automáticas de semanas anteriores y anuncia el cambio en Discord y como una historia de Instagram. Las respuestas históricas se conservan. Cuando se agote el catálogo, el flujo se detendrá antes de publicar una actividad repetida; habrá que añadir ideas nuevas.
+El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Consulta en Supabase qué ideas ya usó y elige una combinación nueva de un catálogo de 52 semanas. Guarda la encuesta y la ruleta en `activities`, pausa solo las actividades automáticas de semanas anteriores y anuncia el cambio en Discord. Las respuestas históricas se conservan. Cuando se agote el catálogo, el flujo se detendrá antes de publicar una actividad repetida; habrá que añadir ideas nuevas.
 
 Para activarlo una sola vez:
 
 1. En GitHub abre **jatsi/jatsi-page → Settings → Secrets and variables → Actions → New repository secret**.
 2. Agrega `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` desde el panel del proyecto Supabase. La clave `service_role` es privada: úsala solo como secreto de Actions; nunca en `config.js`.
 3. Crea un webhook en el canal de anuncios de tu servidor Discord y guarda la URL completa (normalmente `https://discord.com/api/webhooks/...`) como `COMMUNITY_WEBHOOK_URL`. El nombre es solo una etiqueta; el valor debe ser la URL del webhook, no la invitación del servidor ni el enlace normal del canal.
-4. Agrega `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN` de tu cuenta profesional de Instagram Business con los permisos de publicación de contenido.
-5. Abre **Actions → Actividades semanales** y pulsa **Run workflow** para comprobar la primera publicación. Ese botón también crea actividades y publica avisos reales.
+4. Abre **Actions → Actividades semanales** y pulsa **Run workflow** para comprobar la primera publicación. Ese botón crea actividades y publica un aviso real en Discord.
 
-La primera ejecución crea un bucket público llamado `weekly-ig-stories` en Supabase Storage para alojar la imagen vertical de la historia. Instagram Stories requiere permisos de publicación y cuenta profesional Business; una historia es un aviso público temporal, no un DM masivo.
+Por ahora esta programación solo crea actividades en Supabase y envía el anuncio a Discord. Instagram queda fuera hasta que se configure por separado.
 
 Si falta cualquiera de los secretos, la ejecución se detiene antes de modificar actividades. GitHub conserva el historial de cada ejecución y muestra errores de conexión cuando un canal no acepta la publicación.
 
