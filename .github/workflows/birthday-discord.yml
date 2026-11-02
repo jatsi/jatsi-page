@@ -6,7 +6,8 @@ on:
       - main
   schedule:
     # Discord recibe los cumpleaños pendientes como máximo unos minutos después.
-    - cron: '*/5 * * * *'
+    # Evita el minuto 00, que suele acumular retrasos en las colas de GitHub.
+    - cron: '3/5 * * * *'
   workflow_dispatch:
 
 permissions:

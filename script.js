@@ -969,7 +969,7 @@ async function setChismePublication(id, publish) {
   buttons.forEach(button => { button.disabled = true; button.dataset.originalLabel = button.textContent.trim(); button.textContent = publish ? 'Publicando…' : 'Retirando…'; });
   const statusNode = $('#chisme-admin-status');
   if (statusNode) { statusNode.hidden = false; statusNode.className = 'chisme-action-status is-working'; statusNode.textContent = publish ? 'Publicando la respuesta en el cuadernito…' : 'Retirando la respuesta del mural…'; }
-  const payload = {
+  let payload = {
     ...current.payload,
     public_status: publish ? 'published' : 'private',
     ...(publish ? { discord_status: 'pending' } : { discord_status: 'withdrawn' })
@@ -989,6 +989,15 @@ async function setChismePublication(id, publish) {
       const { data: updatedInteraction, error } = await state.supabase.from('interactions').update({ payload }).eq('id', id).select('id').maybeSingle();
       if (error) throw error;
       if (!updatedInteraction) throw new Error('Supabase no actualizó la respuesta. Confirma que tu cuenta tenga el rol de administradora.');
+      if (publish) {
+        try {
+          const { data: notice, error: noticeError } = await state.supabase.functions.invoke('chismografo-discord', { body: { interaction_id: id } });
+          if (noticeError) throw noticeError;
+          if (notice?.sent) payload = { ...payload, discord_status: 'sent', discord_posted_at: notice.discord_posted_at || new Date().toISOString() };
+        } catch (noticeError) {
+          console.error('El cuadernito se publicó, pero el aviso inmediato de Discord quedó pendiente:', noticeError);
+        }
+      }
     } else {
       const local = localInteractions().map(item => item.id === id ? { ...item, payload } : item);
       localStorage.setItem(localKey, JSON.stringify(local));
@@ -997,7 +1006,17 @@ async function setChismePublication(id, publish) {
     if (!state.supabase) localStorage.setItem(localKey, JSON.stringify(state.interactions));
     await loadPublicChisme();
     await renderDashboard();
-    toast(publish ? 'Respuesta publicada anónimamente en el cuadernito.' : 'Respuesta retirada del mural público.');
+    const discordSent = publish && payload.discord_status === 'sent';
+    const discordPending = publish && state.supabase && !discordSent;
+    const refreshedStatus = $('#chisme-admin-status');
+    if (refreshedStatus && discordPending) {
+      refreshedStatus.hidden = false;
+      refreshedStatus.className = 'chisme-action-status is-error';
+      refreshedStatus.textContent = 'El cuadernito ya está publicado, pero Discord no confirmó el aviso inmediato. Quedó pendiente para el proceso automático.';
+    }
+    toast(publish
+      ? discordSent ? 'Cuadernito publicado y anunciado en Discord.' : discordPending ? 'Cuadernito publicado; aviso de Discord pendiente.' : 'Respuesta publicada anónimamente en el cuadernito.'
+      : 'Respuesta retirada del mural público.');
   } catch (error) {
     console.error('No se pudo actualizar la publicación del chismógrafo:', error);
     const needsSchema = /published_chismografo|permission|row.level|relation .* does not exist|check constraint|violates|42501|42P01/i.test(String(error?.message || '') + ' ' + String(error?.code || ''));
@@ -1106,7 +1125,7 @@ function programmingPanel() {
   const daysUntilMonday = (8 - nextMonday.getDay()) % 7 || 7;
   nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
   const nextLabel = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(nextMonday);
-  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada lunes se activa una encuesta y una ruleta nuevas. El chismógrafo permanece fijo en su sección de cuaderno con 50 preguntas; no se cuenta como actividad semanal.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Una encuesta activa</h4><p>La encuesta de la semana anterior se pausa cuando entra la nueva.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>EN DIRECTO</small><h4>Retos para Jatsi</h4><p>Jatsi gira la ruleta durante el stream: humor y retos generales, sin imitaciones.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-book"></i></span><small>EN EL CUADERNO</small><h4>50 preguntas para conocernos</h4><p>Crushes, confesiones y anécdotas. Participación opcional; cumpleaños solo con permiso explícito.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Encuesta, ruleta y avisos de Discord</h3><p>La rotación usa los secretos configurados en GitHub Actions. Los cumpleaños se comparten desde el mismo formulario del cuaderno, solo con apodo, día/mes y permiso explícito. La cola de Discord se revisa cada cinco minutos; después del anuncio, el apodo y la fecha se borran de esa fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Solo se activa una encuesta semanal. Las respuestas del cuaderno son privadas y tú eliges cuáles autorizaron publicación para aprobarlas anónimamente.</span></div></section>';
+  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada lunes se activa una encuesta y una ruleta nuevas. El chismógrafo permanece fijo en su sección de cuaderno con 50 preguntas; no se cuenta como actividad semanal.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Una encuesta activa</h4><p>La encuesta de la semana anterior se pausa cuando entra la nueva.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>EN DIRECTO</small><h4>Retos para Jatsi</h4><p>Jatsi gira la ruleta durante el stream: humor y retos generales, sin imitaciones.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-book"></i></span><small>EN EL CUADERNO</small><h4>50 preguntas para conocernos</h4><p>Crushes, confesiones y anécdotas. Participación opcional; cumpleaños solo con permiso explícito.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Encuesta, ruleta y avisos de Discord</h3><p>La rotación usa los secretos configurados en GitHub Actions. Los cumpleaños se comparten desde el mismo formulario del cuaderno, solo con apodo, día/mes y permiso explícito. Los cuadernitos aprobados avisan al instante; GitHub revisa la cola cada cinco minutos como respaldo. Después del anuncio, el apodo y la fecha del cumpleaños se borran de esa fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Solo se activa una encuesta semanal. Las respuestas del cuaderno son privadas y tú eliges cuáles autorizaron publicación para aprobarlas anónimamente.</span></div></section>';
 }
 
 async function renderDashboard() {

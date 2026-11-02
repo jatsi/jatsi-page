@@ -96,6 +96,15 @@ El cumpleaños está dentro del mismo formulario del cuaderno, no en una activid
 
 El chismógrafo reúne 50 preguntas personales, divertidas y opcionales en cinco apartados. Las respuestas y los datos de perfil quedan privados hasta que administración los revise. Solo pueden aprobarse para publicación las respuestas que tengan autorización explícita; el mural siempre muestra únicamente preguntas y respuestas anónimas. Administración puede retirarlas después. No se deben compartir nombres, usuarios, datos de contacto ni detalles que identifiquen a otras personas.
 
+Al aprobar un cuadernito, la página llama a la función segura `chismografo-discord`, que comprueba la sesión de administración y publica un aviso genérico en Discord inmediatamente. El webhook debe guardarse también en Supabase Edge Functions como `CHISMOGRAFO_WEBHOOK_URL`; no se incluye en los archivos públicos. GitHub Actions revisa la cola cada cinco minutos como respaldo.
+
+Para activar el aviso inmediato en Supabase:
+
+1. En Supabase, abre **Edge Functions → Secrets** y agrega `CHISMOGRAFO_WEBHOOK_URL` con la URL del webhook de `#chismógrafo`.
+2. En una terminal con Supabase CLI, vincula el proyecto con `supabase link --project-ref <PROJECT_REF>` (el identificador aparece en **Project Settings → General**) y ejecuta `supabase functions deploy chismografo-discord --project-ref <PROJECT_REF>`.
+
+Hasta que se despliegue esa función y se agregue el secreto, las aprobaciones se publican en la página y el aviso queda pendiente para GitHub Actions.
+
 En una base de datos que ya existe, vuelve a ejecutar el archivo completo `supabase/schema.sql` desde Supabase → SQL Editor para instalar las reglas seguras de lectura pública y aprobación. El archivo usa políticas e inserciones idempotentes.
 
 Para activarlo una sola vez:
