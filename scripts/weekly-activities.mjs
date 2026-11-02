@@ -53,6 +53,7 @@ const pollFormats = [
   { id: 'combo', question: topic => `¿Qué mezcla probamos en ${topic.label}?`, wheelTitle: topic => `Combo inesperado: ${topic.label}`, prefix: 'Como misión secundaria: ', chismeTitle: topic => `Chismógrafo de combos · ${topic.label}`, chismeQuestions: topic => [`¿Qué dos ideas mezclarías en ${topic.label}?`, `¿Qué crossover ficticio quedaría perfecto con ${topic.label}?`, `¿Qué combinación rara sí te atreverías a probar en ${topic.label}?`] },
   { id: 'finale', question: topic => `¿Cómo cerramos ${topic.label}?`, wheelTitle: topic => `Final sorpresa: ${topic.label}`, prefix: 'Solo tienes una oportunidad: ', chismeTitle: topic => `Chismógrafo final · ${topic.label}`, chismeQuestions: topic => [`¿Qué momento te gustaría repetir de ${topic.label}?`, `¿Qué detalle debería quedarse para la próxima de ${topic.label}?`, `¿Qué frase resumiría tu experiencia con ${topic.label}?`] }
 ];
+const weeklyFormats = pollFormats.slice(0, 3);
 const pollAlternatives = [
   ['Caos y risas', 'Misterio y sustos', 'Relajarnos juntas', 'Competencia intensa'],
   ['El chat escoge el reto', 'Jugamos en equipo', 'Votamos por rondas', 'Sorpresa al final'],
@@ -88,13 +89,59 @@ const wheelChallenges = [
   'Responde la siguiente pregunta con una rima improvisada',
   'Haz una cara de sorpresa y mantenla durante cinco segundos'
 ];
-const planCatalog = topics.flatMap((topic, topicIndex) => pollFormats.map((format, formatIndex) => ({
+const oracleSignals = [
+  'Tu intuición ya encontró una pista: date permiso de seguirla.',
+  'Un paso pequeño también puede cambiar el rumbo.',
+  'Lo que hoy parece pausa puede ser preparación.',
+  'Una conversación bonita podría abrir una puerta.',
+  'Tu sensibilidad es brújula, no obstáculo.',
+  'Lo inesperado también puede traer una sorpresa amable.',
+  'No necesitas tener todo resuelto para empezar.',
+  'Tu creatividad merece un ratito de espacio.',
+  'Descansar también cuenta como avanzar.',
+  'Alguien podría alegrarse mucho de escuchar tu idea.',
+  'Tu siguiente intento puede salir mejor de lo que imaginas.',
+  'Confía en la versión de ti que ya superó días difíciles.',
+  'Una risa compartida puede ser justo la señal que necesitabas.',
+  'Hoy puedes elegir lo que te da paz.',
+  'Una puerta nueva aparece cuando sueltas la prisa.',
+  'Lo que te hace diferente también te hace brillar.',
+  'Pedir ayuda es otra forma de ser valiente.',
+  'Guarda un poquito de energía para algo que te emocione.',
+  'Tu esfuerzo silencioso también está dando frutos.',
+  'Una idea sencilla puede convertirse en un recuerdo enorme.'
+];
+const oracleWeeklyNotes = [
+  'Esta semana, sigue la curiosidad.',
+  'Hazle caso a la emoción que te dé calma.',
+  'Una buena compañía puede cambiar el plan.',
+  'Deja que lo inesperado te sorprenda.',
+  'Tu historia todavía puede tomar otro giro.',
+  'No hace falta adivinar cada paso.',
+  'A veces dos ideas juntas crean algo genial.',
+  'Cierra la semana con algo que te haga sonreír.'
+];
+const eitherChoices = [
+  topic => topic.pollOptions.slice(0, 2),
+  topic => [`Plan tranqui para ${topic.label}`, `Plan caótico para ${topic.label}`],
+  topic => [`Hacer ${topic.label} en equipo`, `Hacer ${topic.label} a tu ritmo`],
+  topic => [`${topic.label} con una sorpresa`, `${topic.label} siguiendo el plan`],
+  topic => [`La versión tierna de ${topic.label}`, `La versión intensa de ${topic.label}`],
+  topic => [`${topic.label} con música`, `${topic.label} en silencio total`],
+  topic => [`Empezar ${topic.label} con una apuesta`, `Dejar que ${topic.label} te sorprenda`],
+  topic => [`Repetir tu parte favorita de ${topic.label}`, `Probar algo nuevo en ${topic.label}`]
+];
+const planCatalog = topics.flatMap((topic, topicIndex) => weeklyFormats.map((format, formatIndex) => ({
   id: `${topic.id}-${format.id}`,
   poll: { title: format.question(topic), options: formatIndex === 0 ? topic.pollOptions : pollAlternatives[formatIndex - 1] },
   wheel: { title: format.wheelTitle(topic), options: Array.from({ length: 6 }, (_, index) => `${format.prefix}${wheelChallenges[(topicIndex * 5 + index) % wheelChallenges.length]}`) },
+  either: { title: `Esto o aquello · ${topic.label}`, options: eitherChoices[formatIndex](topic) },
+  oracle: {
+    options: Array.from({ length: 6 }, (_, index) => `${oracleSignals[(topicIndex * 3 + formatIndex * 2 + index) % oracleSignals.length]} ${oracleWeeklyNotes[formatIndex]}`)
+  },
   chismografo: { title: format.chismeTitle(topic.label), questions: format.chismeQuestions(topic.label) }
 })));
-if (planCatalog.length !== 160) throw new Error(`El catálogo debe tener 160 combinaciones; tiene ${planCatalog.length}.`);
+if (planCatalog.length !== topics.length * weeklyFormats.length) throw new Error(`El catálogo semanal está incompleto: ${planCatalog.length} combinaciones.`);
 let plan;
 let entries;
 async function supabaseRequest(path, init = {}) {
@@ -167,6 +214,16 @@ entries = [
     description: 'Jatsi gira esta ruleta en directo. Los retos son generales, graciosos y siempre de buen rollo.',
     config: { options: plan.wheel.options, host_only: true, campaign: 'weekly', plan_id: plan.id, week: weekKey }
   },
+  {
+    slug: 'esto-o-aquello', type: 'either', title: plan.either.title,
+    description: 'Elige tu lado para la dinámica de esta semana.',
+    config: { options: plan.either.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+  },
+  {
+    slug: 'oraculo-katsy', type: 'oracle', title: 'Oráculo de Katsy',
+    description: 'Una señal bonita del universo, renovada cada semana.',
+    config: { options: plan.oracle.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+  },
 ];
 const baseWheel = {
   slug: 'ruleta-cosmica', type: 'wheel', title: 'Ruleta del directo',
@@ -181,7 +238,7 @@ async function postDiscord() {
       allowed_mentions: { parse: [] },
       embeds: [{
         title: 'Esta semana: la comunidad decide',
-        description: `**Encuesta:** ${plan.poll.title}\n\n**Dinámica:** ${plan.wheel.title}\n\nEl cuadernito de 50 preguntas siempre está disponible en la página.\n\nVota, gira y participa con nosotras.`,
+        description: `**Encuesta:** ${plan.poll.title}\n\n**Ruleta:** ${plan.wheel.title}\n\n**Esto o aquello:** ${plan.either.title}\n\n**Oráculo:** señales nuevas para esta semana.\n\nEl cuadernito de 50 preguntas siempre está disponible en la página.\n\nVota, elige, recibe tu señal y participa con nosotras.`,
         url: pageUrl, color: 0xb879ef,
         footer: { text: 'Jatsi × Katsy · Portal semanal' }
       }]
@@ -199,7 +256,7 @@ const oldCampaignQuery = new URLSearchParams({
 const oldCampaigns = await supabaseRequest(`/rest/v1/activities?${oldCampaignQuery}`);
 const activeSurveyQuery = new URLSearchParams({
   select: 'id,slug,type,config',
-  type: 'in.(poll,question)',
+  type: 'in.(poll,question,either)',
   is_active: 'eq.true'
 });
 const activeSurveys = await supabaseRequest(`/rest/v1/activities?${activeSurveyQuery}`);
@@ -217,7 +274,7 @@ await supabaseRequest(`/rest/v1/activities?slug=like.${currentPrefix}*-chismogra
 await supabaseRequest('/rest/v1/activities?slug=eq.cumpleanos-del-portal', {
   method: 'PATCH', body: JSON.stringify({ is_active: false })
 });
-for (const activity of activeSurveys.filter(item => item.slug !== weekPollSlug && (item.type === 'poll' || (item.type === 'question' && Array.isArray(item.config?.options))))) {
+for (const activity of activeSurveys.filter(item => item.slug !== weekPollSlug && item.slug !== 'esto-o-aquello' && (item.type === 'poll' || item.type === 'either' || (item.type === 'question' && Array.isArray(item.config?.options))))) {
   await supabaseRequest(`/rest/v1/activities?id=eq.${activity.id}`, {
     method: 'PATCH', body: JSON.stringify({ is_active: false })
   });
@@ -228,4 +285,4 @@ for (const activity of oldCampaigns.filter(item => !item.slug.startsWith(current
   });
 }
 await postDiscord();
-console.log(`Semana ${weekKey}: encuesta única y ruleta para Jatsi activadas; el chismógrafo permanece en su cuaderno; aviso publicado en Discord.`);
+console.log(`Semana ${weekKey}: encuesta, ruleta, Esto o aquello y Oráculo actualizados; el chismógrafo permanece en su cuaderno; aviso publicado en Discord.`);
