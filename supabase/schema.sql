@@ -30,19 +30,27 @@ create table if not exists public.interactions (
   user_id uuid references public.profiles(id) on delete set null,
   visitor_id uuid,
   kind text not null check (kind in ('wheel', 'poll', 'message', 'either', 'oracle', 'question')),
-  payload jsonb not null default '{}'::jsonb check (octet_length(payload::text) <= 5000),
+  payload jsonb not null default '{}'::jsonb check (octet_length(payload::text) <= 40000),
   created_at timestamptz not null default now()
 );
 
 -- Solo contiene respuestas ya aprobadas y anónimas; nunca copia alias ni ids de visitantes.
 create table if not exists public.published_chismografo (
   interaction_id uuid not null references public.interactions(id) on delete cascade,
-  answer_index smallint not null check (answer_index between 0 and 5),
+  answer_index smallint not null check (answer_index between 0 and 49),
   question text not null check (char_length(question) <= 300),
   answer text not null check (char_length(answer) between 1 and 300),
   created_at timestamptz not null default now(),
   primary key (interaction_id, answer_index)
 );
+
+-- Amplía los límites para el formulario de 50 preguntas también en proyectos existentes.
+alter table public.interactions drop constraint if exists interactions_payload_check;
+alter table public.interactions add constraint interactions_payload_check
+  check (octet_length(payload::text) <= 40000);
+alter table public.published_chismografo drop constraint if exists published_chismografo_answer_index_check;
+alter table public.published_chismografo add constraint published_chismografo_answer_index_check
+  check (answer_index between 0 and 49);
 
 create index if not exists interactions_activity_created_idx on public.interactions(activity_id, created_at desc);
 create index if not exists interactions_user_created_idx on public.interactions(user_id, created_at desc);
@@ -239,9 +247,20 @@ values
   ('44444444-4444-4444-8444-444444444444', 'esto-o-aquello', 'either', 'Esto o aquello', 'No lo pienses demasiado. Elige tu lado.', '{"options":["Anime toda la noche","Gaming hasta el amanecer"]}'),
   ('55555555-5555-4555-8555-555555555555', 'oraculo-katsy', 'oracle', 'Oráculo de Katsy', 'Una señal bonita del universo, solo para ti.', '{"options":["Tu ritmo también es progreso.","Algo bonito ya viene en camino.","Hoy confía en tu intuición.","No tienes que poder con todo a la vez.","Tu rareza es parte de tu luz.","Esa idea merece una oportunidad."]}'),
   ('66666666-6666-4666-8666-666666666666', 'pregunta-estelar', 'question', 'Pregunta estelar', 'Deja una pregunta para el próximo Q&A.', '{"placeholder":"¿Qué siempre quisiste preguntarle a Jatsi?","max_length":400}'),
-  ('77777777-7777-4777-8777-777777777777', 'cumpleanos-del-portal', 'question', 'Cumpleaños del portal', 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.', '{"form_type":"birthday"}'),
-  ('88888888-8888-4888-8888-888888888888', 'chismografo-del-portal', 'question', 'Chismógrafo del portal', 'Preguntas ligeras para compartir gustos, ideas y anécdotas divertidas de la comunidad.', '{"form_type":"chismografo","questions":["¿Qué gusto culposo defenderías con orgullo?","¿Qué momento del stream te ha hecho reír más?","¿Qué juego o tema te gustaría ver en el portal?"]}')
+  ('88888888-8888-4888-8888-888888888888', 'chismografo-del-portal', 'question', 'Chismógrafo del cuaderno', 'Responde las 50 preguntas personales, divertidas y opcionales en el cuaderno de la comunidad.', '{"form_type":"chismografo","notebook_only":true,"questions":[]}')
 on conflict (slug) do nothing;
+
+-- El chismógrafo vive en su sección de cuaderno, no como tarjeta de actividad.
+update public.activities
+set title = 'Chismógrafo del cuaderno',
+    description = 'Responde las 50 preguntas personales, divertidas y opcionales en el cuaderno de la comunidad.',
+    config = '{"form_type":"chismografo","notebook_only":true,"questions":[]}'::jsonb
+where slug = 'chismografo-del-portal';
+
+-- Las instalaciones anteriores tenían formularios de cumpleaños separados y un
+-- chismógrafo semanal. Ambos quedan fuera de las actividades públicas.
+update public.activities set is_active = false where slug = 'cumpleanos-del-portal';
+update public.activities set is_active = false where slug like 'jatsi-semana-%-chismografo';
 
 update public.activities
 set title = 'Ruleta del directo',

@@ -22,6 +22,69 @@ const defaultWheelOptions = [
   'Canta una frase inventada con voz de estrella de ópera'
 ];
 
+const chismografoQuestions = [
+  ['Crushes, likes y mariposas', [
+    '¿Quién te gusta actualmente? Puedes decir solo una inicial o pasar.',
+    '¿Te ha gustado alguien que conociste en un directo? ¿Qué te llamó la atención?',
+    '¿Has conocido a alguien por TikTok y luego te cayó muy bien? Cuenta la anécdota sin nombres.',
+    '¿Cuál ha sido tu crush más inesperado?',
+    '¿Qué hiciste para llamar la atención de alguien que te gustaba?',
+    '¿Alguna vez mandaste un mensaje y te arrepentiste al segundo?',
+    '¿Te has declarado alguna vez? ¿Cómo te fue?',
+    '¿Qué canción dedicarías en secreto?',
+    '¿Qué green flag te conquista rapidísimo?',
+    '¿Qué red flag ya no dejarías pasar?'
+  ]],
+  ['Exes, citas y corazones rotos', [
+    '¿Has tenido ex? Sin nombres: ¿qué aprendiste de esa relación?',
+    '¿Has vuelto a hablar con un ex aunque dijiste “nunca más”? Puedes pasar.',
+    '¿Cuál fue tu cita más incómoda o más chistosa?',
+    '¿Te han dejado en visto justo cuando más esperabas respuesta?',
+    '¿Alguna vez confundiste amabilidad con coqueteo?',
+    '¿Cuál fue la excusa más rara que usaste para cancelar una cita?',
+    '¿Has stalkeado el perfil de un crush más de lo que admitirías?',
+    '¿Cuál es tu gusto culposo en personas que te atraen?',
+    '¿Qué consejo le darías a tu yo de su primer amor?',
+    '¿Qué detalle romántico te daría muchísima pena recibir en público?'
+  ]],
+  ['Momentos de tierra trágame', [
+    '¿Cuál ha sido tu momento más vergonzoso en público?',
+    '¿Te has caído o tropezado justo cuando alguien te estaba viendo?',
+    '¿Has saludado con emoción a alguien que no te estaba saludando?',
+    '¿Cuál fue el mensaje que mandaste al chat equivocado?',
+    '¿Has fingido entender un chiste y te reíste tarde?',
+    '¿Qué outfit o peinado de tu pasado te da risa ahora?',
+    '¿Alguna vez hablaste solo pensando que nadie te escuchaba?',
+    '¿Qué mentira blanca dijiste y luego tuviste que sostener?',
+    '¿Qué cosa ridícula haces cuando crees que nadie te ve?',
+    '¿Qué palabra pronunciaste mal durante demasiado tiempo?'
+  ]],
+  ['Confesiones mañosas y travesuras', [
+    '¿Alguna vez te llevaste algo pequeño que no era tuyo? Puedes responder sí/no/paso; sin detalles ni nombres.',
+    '¿Alguna vez fumaste o tomaste algo? Puedes decir sí, no o paso; sin presión ni detalles.',
+    '¿Qué travesura casi te cuesta que te descubrieran?',
+    '¿Alguna vez culpaste a alguien más de algo que hiciste? ¿Te arrepentiste?',
+    '¿Has hecho trampa en un juego de mesa o videojuego? Confiesa tu nivel de maña.',
+    '¿Qué excusa inventaste para llegar tarde?',
+    '¿Alguna vez revisaste un regalo antes de que te lo dieran?',
+    '¿Qué secreto inocente guardaste por más tiempo del necesario?',
+    '¿Cuál fue tu berrinche más absurdo?',
+    '¿Qué regla rompiste de pequeña/o y hoy te da risa?'
+  ]],
+  ['Secretitos, gustos y comunidad', [
+    '¿Cuál es un gusto culposo que te da pena admitir?',
+    '¿Qué canción te sabes completa aunque digas que no te gusta?',
+    '¿Qué apodo te pusieron y todavía recuerdas?',
+    '¿Qué cosa infantil sigues disfrutando con orgullo?',
+    '¿Cuál es tu talento más inútil?',
+    '¿Qué búsqueda reciente te daría pena explicar?',
+    '¿Qué comida amas y casi todo el mundo critica?',
+    '¿Qué chisme inocente te gustaría que Jatsi y Katsy contesten en directo?',
+    '¿Qué secreto divertido de tu personalidad casi nadie adivina?',
+    'Si pudieras hacer una pregunta atrevida (pero respetuosa) a Jatsi o Katsy, ¿cuál sería?'
+  ]]
+].flatMap(([category, questions]) => questions.map(question => ({ category, question })));
+
 const seedActivities = [
   {
     id: '11111111-1111-4111-8111-111111111111',
@@ -78,21 +141,12 @@ const seedActivities = [
     is_active: true
   },
   {
-    id: '77777777-7777-4777-8777-777777777777',
-    slug: 'cumpleanos-del-portal',
-    type: 'question',
-    title: 'Cumpleaños del portal',
-    description: 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.',
-    config: { form_type: 'birthday' },
-    is_active: true
-  },
-  {
     id: '88888888-8888-4888-8888-888888888888',
     slug: 'chismografo-del-portal',
     type: 'question',
-    title: 'Chismógrafo del portal',
-    description: 'Preguntas ligeras para compartir gustos, ideas y anécdotas divertidas de la comunidad.',
-    config: { form_type: 'chismografo', questions: ['¿Qué gusto culposo defenderías con orgullo?', '¿Qué momento del stream te ha hecho reír más?', '¿Qué juego o tema te gustaría ver en el portal?'] },
+    title: 'Chismógrafo del cuaderno',
+    description: 'Responde 50 preguntas personales, divertidas y opcionales en el cuaderno de la comunidad.',
+    config: { form_type: 'chismografo', notebook_only: true, questions: chismografoQuestions.map(item => item.question) },
     is_active: true
   }
 ];
@@ -156,17 +210,21 @@ function activityById(id) {
   return state.activities.find(item => item.id === id) || state.adminActivities.find(item => item.id === id);
 }
 
+function isNotebookOrHiddenActivity(activity) {
+  return Boolean(activity?.config?.notebook_only || activity?.slug === 'cumpleanos-del-portal' || /^jatsi-semana-.*-chismografo$/.test(activity?.slug || ''));
+}
+
 function renderActivityCards() {
   const grid = $('#activity-grid');
   if (!grid) return;
-  const available = new Set(state.activities.map(item => item.slug));
+  const available = new Set(state.activities.filter(item => !isNotebookOrHiddenActivity(item)).map(item => item.slug));
   $$('.activity-card:not([data-generated-activity])', grid).forEach(card => {
     const button = $('[data-activity]', card);
     if (button) card.hidden = !available.has(button.dataset.activity);
   });
   $$('[data-generated-activity]', grid).forEach(card => card.remove());
   const knownSlugs = new Set($$('.activity-card:not([data-generated-activity]) [data-activity]', grid).map(button => button.dataset.activity));
-  state.activities.filter(item => item.is_active !== false && !knownSlugs.has(item.slug)).forEach((activity, index) => {
+  state.activities.filter(item => item.is_active !== false && !isNotebookOrHiddenActivity(item) && !knownSlugs.has(item.slug)).forEach((activity, index) => {
     const card = document.createElement('article');
     card.className = 'activity-card reveal visible';
     card.dataset.generatedActivity = activity.slug;
@@ -263,7 +321,27 @@ function wheelMarkup(options) {
   return '<div class="wheel-shell"><div class="wheel" id="active-wheel" style="--wheel-gradient:' + gradient + '">' + labels + '<span class="wheel-hub"><i class="iconoir-sparks"></i></span></div><span class="wheel-pointer" aria-label="Indicador del resultado"><i class="iconoir-arrow-left"></i></span></div>';
 }
 
+function chismografoFormMarkup(activity, intro, share) {
+  const questions = chismografoQuestions.map(item => item.question);
+  const groups = [...new Set(chismografoQuestions.map(item => item.category))];
+  const questionMarkup = groups.map((category, categoryIndex) => {
+    const indices = chismografoQuestions.map((item, index) => item.category === category ? index : -1).filter(index => index >= 0);
+    const first = String(categoryIndex * 10 + 1).padStart(2, '0');
+    const last = String((categoryIndex + 1) * 10).padStart(2, '0');
+    return '<details class="chisme-question-group"' + (categoryIndex === 0 ? ' open' : '') + '><summary><span><i class="iconoir-book"></i>' + escapeHTML(category) + '</span><small>' + first + '—' + last + ' <b>＋</b></small></summary><div class="chisme-question-grid">' + indices.map(index => '<label class="chisme-question"><span><i class="iconoir-chat-bubble-question"></i>' + String(index + 1).padStart(2, '0') + ' / ' + escapeHTML(questions[index] || chismografoQuestions[index].question) + '</span><textarea name="answer_' + index + '" maxlength="300" placeholder="Puedes contestar o saltarla…"></textarea></label>').join('') + '</div></details>';
+  }).join('');
+  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const zodiac = ['Aries', 'Tauro', 'Géminis', 'Cáncer', 'Leo', 'Virgo', 'Libra', 'Escorpio', 'Sagitario', 'Capricornio', 'Acuario', 'Piscis'];
+  const zodiacOptions = zodiac.map(sign => '<option>' + sign + '</option>').join('');
+  return intro + '<div class="chisme-form-intro"><span class="chisme-form-sticker">✿</span><div><b>50 PREGUNTAS · 5 PÁGINAS DE CHISMECITO</b><p>Crushes, exes, vergüenzas y confesiones mañosas. Contesta solo las que quieras; puedes pasar cualquier pregunta.</p></div></div><form class="activity-form chisme-form" id="chisme-form"><div class="chisme-profile-card"><div class="chisme-profile-heading"><span>ANTES DE EMPEZAR</span><small>Tu información nunca sale en el mural</small></div><label class="consent-label chisme-anonymous"><input name="anonymous" type="checkbox"><span>Quiero responder anónimamente: no pedir nombre ni cumpleaños.</span></label><div class="chisme-identity-fields"><label><span><i class="iconoir-user"></i>Tu nombre o apodo</span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="¿Cómo te conoce la comunidad?" required></label><div class="chisme-birthday-fields"><div class="birthday-grid"><label><span>Mi cumpleaños <small>(opcional)</small></span><select name="day"><option value="">Día</option>' + Array.from({ length: 31 }, (_, index) => '<option value="' + (index + 1) + '">' + (index + 1) + '</option>').join('') + '</select></label><label><span>&nbsp;</span><select name="month"><option value="">Mes</option>' + months.map((month, index) => '<option value="' + (index + 1) + '">' + month + '</option>').join('') + '</select></label></div><label class="consent-label chisme-birthday-consent"><input name="announce_birthday" type="checkbox"><span>Autorizo que mi apodo y día/mes se anuncien en el Discord de la comunidad.</span></label></div></div><div class="chisme-profile-grid"><label><span>Edad <small>(opcional)</small></span><input name="age" type="number" min="1" max="120" inputmode="numeric" placeholder="Sin fecha de nacimiento"></label><label><span>Signo zodiacal <small>(opcional)</small></span><select name="zodiac"><option value="">Prefiero no decir</option>' + zodiacOptions + '</select></label></div><p class="chisme-data-note"><i class="iconoir-shield-check"></i> Edad y signo son opcionales y privados. El cumpleaños solo se envía a Discord si lo eliges y das permiso. No pedimos el año.</p></div>' + questionMarkup + '<label class="consent-label chisme-consent"><input name="allow_public" type="checkbox"><span>Autorizo que Jatsi pueda aprobar y publicar mis respuestas juntas, siempre anónimamente.</span></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Jatsi verá las respuestas y tu apodo solo en su panel privado. El mural nunca muestra tu nombre, edad, signo ni cumpleaños. Evita nombres reales, usuarios, datos de contacto o detalles que identifiquen a alguien.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Guardar mi chismógrafo</button><p class="form-status" role="status"></p></form>' + share + '</div>';
+}
+
 function renderActivity(activity) {
+  if (activity.config?.form_type === 'birthday') {
+    toast('El cumpleaños ahora se comparte dentro del cuaderno del chismógrafo.');
+    const notebook = activityBySlug('chismografo-del-portal');
+    if (notebook) return renderActivity(notebook);
+  }
   const container = $('#activity-modal-content');
   const options = activity.config?.options || [];
   const icon = activityIconClass(activity.type);
@@ -280,9 +358,20 @@ function renderActivity(activity) {
     container.innerHTML = intro + '<div class="choice-list">' + options.map((option, index) => '<button class="choice-button" type="button" data-choice="' + index + '"><i class="' + icon + '"></i><span>' + escapeHTML(option) + '</span><b>' + String(index + 1).padStart(2, '0') + '</b></button>').join('') + '</div><div id="activity-result"></div>' + share + '</div>';
     $$('[data-choice]', container).forEach(button => button.addEventListener('click', () => vote(activity, Number(button.dataset.choice), button)));
   } else if (activity.type === 'question' && activity.config?.form_type === 'chismografo') {
-    const questions = Array.isArray(activity.config?.questions) ? activity.config.questions.slice(0, 6) : [];
-    container.innerHTML = intro + '<form class="activity-form chisme-form" id="chisme-form">' + questions.map((question, index) => '<label class="chisme-question"><span><i class="iconoir-chat-bubble-question"></i>' + String(index + 1).padStart(2, '0') + ' / ' + escapeHTML(question) + '</span><textarea name="answer_' + index + '" maxlength="300" placeholder="Cuéntanos tu respuesta…"></textarea></label>').join('') + '<label><span><i class="iconoir-user"></i>Tu alias <small>(solo para el panel privado)</small></span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="Opcional; en el mural sales anónim@"></label><label class="consent-label chisme-consent"><input name="allow_public" type="checkbox"><span>Autorizo que Jatsi pueda aprobar y publicar mis respuestas juntas, siempre de forma anónima.</span></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Jatsi verá todas las respuestas en su panel. Solo se mostrarán públicamente si marcas la autorización y ella las aprueba; nunca se muestra tu alias. No incluyas secretos ni datos privados de otras personas.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Enviar mis respuestas</button><p class="form-status" role="status"></p></form>' + share + '</div>';
-    $('#chisme-form').addEventListener('submit', event => sendChismografo(event, activity));
+    container.innerHTML = chismografoFormMarkup(activity, intro, share);
+    const form = $('#chisme-form');
+    $('[name="anonymous"]', form).addEventListener('change', event => {
+      const anonymous = event.target.checked;
+      $('.chisme-identity-fields', form).hidden = anonymous;
+      $('[name="display_name"]', form).required = !anonymous;
+      if (anonymous) {
+        $('[name="display_name"]', form).value = '';
+        $('[name="day"]', form).value = '';
+        $('[name="month"]', form).value = '';
+        $('[name="announce_birthday"]', form).checked = false;
+      }
+    });
+    form.addEventListener('submit', event => sendChismografo(event, activity));
   } else if (activity.type === 'question' && activity.config?.form_type === 'birthday') {
     const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     container.innerHTML = intro + '<form class="activity-form birthday-form" id="birthday-form"><label><span><i class="iconoir-user"></i>Tu alias para Discord</span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="¿Cómo te conoce la comunidad?"></label><div class="birthday-grid"><label><span>Día</span><select name="day" required><option value="">Día</option>' + Array.from({ length: 31 }, (_, index) => '<option value="' + (index + 1) + '">' + (index + 1) + '</option>').join('') + '</select></label><label><span>Mes</span><select name="month" required><option value="">Mes</option>' + months.map((month, index) => '<option value="' + (index + 1) + '">' + month + '</option>').join('') + '</select></label></div><label class="consent-label"><input name="consent" type="checkbox" required><span>Autorizo que publiquen mi alias y mi cumpleaños (día y mes) en el servidor de Discord de la comunidad.</span></label><p class="message-privacy-note"><i class="iconoir-shield-check"></i>No pedimos ni guardamos el año de nacimiento. La publicación se procesa automáticamente en unos minutos.</p><button class="button button-primary" type="submit"><i class="iconoir-gift"></i> Compartir mi cumpleaños</button><p class="form-status" role="status"></p></form>' + share + '</div>';
@@ -396,16 +485,41 @@ async function sendChismografo(event, activity) {
   event.preventDefault();
   const form = event.currentTarget;
   const data = new FormData(form);
-  const questions = Array.isArray(activity.config?.questions) ? activity.config.questions.slice(0, 6) : [];
+  const questions = chismografoQuestions.map(item => item.question);
   const answers = questions.map((question, index) => ({ question, answer: String(data.get('answer_' + index) || '').trim().slice(0, 300) })).filter(item => item.answer);
   const status = $('.form-status', form);
   if (!answers.length) { status.textContent = 'Responde al menos una pregunta para participar.'; return; }
+  const anonymous = Boolean(data.get('anonymous'));
+  const displayName = anonymous ? '' : String(data.get('display_name') || '').trim().slice(0, 40);
+  const ageValue = String(data.get('age') || '').trim();
+  const age = ageValue ? Number(ageValue) : null;
+  if (age !== null && (!Number.isInteger(age) || age < 1 || age > 120)) { status.textContent = 'Escribe una edad válida o deja ese campo vacío.'; return; }
+  const month = anonymous ? 0 : Number(data.get('month'));
+  const day = anonymous ? 0 : Number(data.get('day'));
+  const announceBirthday = !anonymous && Boolean(data.get('announce_birthday'));
+  if ((day && !month) || (!day && month)) { status.textContent = 'Completa día y mes, o deja ambos sin seleccionar.'; return; }
+  if (announceBirthday && (!day || !month || day > new Date(2000, month, 0).getDate())) { status.textContent = 'Para anunciarlo, elige un día y un mes válidos.'; return; }
   status.textContent = 'Guardando tus respuestas…';
-  const displayName = String(data.get('display_name') || '').trim().slice(0, 40);
   try {
-    await recordInteraction(activity, 'question', { form_type: 'chismografo', answers, display_name: displayName || null, anonymous: !displayName, allow_public: Boolean(data.get('allow_public')), public_status: data.get('allow_public') ? 'pending' : 'private' });
+    await recordInteraction(activity, 'question', { form_type: 'chismografo', answers, display_name: displayName || null, anonymous, age, zodiac: String(data.get('zodiac') || '').slice(0, 20) || null, allow_public: Boolean(data.get('allow_public')), public_status: data.get('allow_public') ? 'pending' : 'private' });
+    let birthdayQueued = false;
+    if (announceBirthday) {
+      try {
+        await recordInteraction(activity, 'question', { form_type: 'birthday', month, day, display_name: displayName, consent: true, discord_status: 'pending' });
+        birthdayQueued = true;
+      } catch (error) {
+        console.error('No se pudo encolar el cumpleaños para Discord:', error);
+      }
+    }
     form.reset();
-    status.textContent = state.supabase ? '¡Listo! Tus respuestas quedaron en el panel privado de Jatsi.' : 'Guardado solo en este navegador de demostración; conecta Supabase para enviarlo al panel.';
+    $('.chisme-identity-fields', form).hidden = false;
+    $('[name="display_name"]', form).required = true;
+    $('.chisme-question-group', form)?.setAttribute('open', '');
+    status.textContent = announceBirthday && !birthdayQueued
+      ? 'Tus respuestas se guardaron, pero el aviso de cumpleaños no pudo registrarse. Jatsi podrá añadirlo desde el panel.'
+      : state.supabase
+        ? '¡Listo! Tus respuestas quedaron en el panel privado de Jatsi.' + (birthdayQueued ? ' El cumpleaños autorizado se anunciará automáticamente en Discord.' : '')
+        : 'Guardado solo en este navegador de demostración; conecta Supabase para enviarlo al panel.';
   } catch (error) {
     console.error('No se pudo guardar el chismógrafo:', error);
     status.textContent = writeErrorMessage(error, 'tus respuestas');
@@ -732,11 +846,12 @@ function adminOverview() {
 function userOverview() {
   const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind));
   const votes = state.interactions.filter(item => ['poll', 'either'].includes(item.kind));
-  return '<div class="metric-grid">' + metricCard('iconoir-chat-lines', 'MIS MENSAJES', messages.length, 'Guardados') + metricCard('iconoir-stats-up-square', 'MIS VOTOS', votes.length, 'Decisiones') + metricCard('iconoir-refresh-double', 'GIROS', state.interactions.filter(item => item.kind === 'wheel').length, 'Destinos') + metricCard('iconoir-magic-wand', 'SEÑALES', state.interactions.filter(item => item.kind === 'oracle').length, 'Del oráculo') + '</div><div class="dashboard-grid"><section class="panel"><h3>Tu historia reciente</h3>' + historyHTML(state.interactions.slice(0, 8), 'Participa en una actividad y aparecerá aquí.') + '</section><section class="panel"><h3>Portal rápido</h3>' + state.activities.slice(0, 4).map(item => '<div class="history-item"><span>' + typeIcon(item.type) + '</span><div><strong>' + escapeHTML(item.title) + '</strong><small>' + escapeHTML(item.description) + '</small></div><button class="share-icon" type="button" data-open-activity="' + item.slug + '"><i class="iconoir-arrow-up-right"></i></button></div>').join('') + '</section></div>';
+  const quickActivities = state.activities.filter(item => !isNotebookOrHiddenActivity(item)).slice(0, 4);
+  return '<div class="metric-grid">' + metricCard('iconoir-chat-lines', 'MIS MENSAJES', messages.length, 'Guardados') + metricCard('iconoir-stats-up-square', 'MIS VOTOS', votes.length, 'Decisiones') + metricCard('iconoir-refresh-double', 'GIROS', state.interactions.filter(item => item.kind === 'wheel').length, 'Destinos') + metricCard('iconoir-magic-wand', 'SEÑALES', state.interactions.filter(item => item.kind === 'oracle').length, 'Del oráculo') + '</div><div class="dashboard-grid"><section class="panel"><h3>Tu historia reciente</h3>' + historyHTML(state.interactions.slice(0, 8), 'Participa en una actividad y aparecerá aquí.') + '</section><section class="panel"><h3>Portal rápido</h3>' + quickActivities.map(item => '<div class="history-item"><span>' + typeIcon(item.type) + '</span><div><strong>' + escapeHTML(item.title) + '</strong><small>' + escapeHTML(item.description) + '</small></div><button class="share-icon" type="button" data-open-activity="' + item.slug + '"><i class="iconoir-arrow-up-right"></i></button></div>').join('') + '</section></div>';
 }
 
 function messagesPanel() {
-  const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind) && item.payload?.form_type !== 'chismografo');
+  const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind) && !['chismografo', 'birthday'].includes(item.payload?.form_type));
   return '<section class="panel"><h3>Mensajes recibidos</h3>' + historyHTML(messages, 'Aún no han llegado mensajes.') + '</section>';
 }
 
@@ -752,14 +867,19 @@ function chismografoPanel() {
       : canPublish
         ? '<button class="admin-table-action" type="button" data-publish-chisme="' + item.id + '"><i class="iconoir-eye"></i>Aprobar y publicar</button>'
         : '<span class="chisme-private-lock"><i class="iconoir-lock"></i> No autorizó</span>';
-    return '<article class="chisme-admin-card"><div class="chisme-admin-top"><span>✎ RESPUESTA DE ' + escapeHTML(item.payload.display_name || 'ANÓNIM@') + '</span><small>' + escapeHTML(stateLabel) + '</small></div>' + answerMarkup + '<div class="chisme-admin-foot"><small>' + escapeHTML(formatDate(item.created_at)) + '</small>' + action + '</div></article>';
+    const profile = [item.payload.age ? 'Edad: ' + item.payload.age : '', item.payload.zodiac ? 'Signo: ' + item.payload.zodiac : ''].filter(Boolean).join(' · ');
+    return '<article class="chisme-admin-card"><div class="chisme-admin-top"><span>✎ RESPUESTA DE ' + escapeHTML(item.payload.display_name || 'ANÓNIM@') + (profile ? '<small class="chisme-private-lock">' + escapeHTML(profile) + '</small>' : '') + '</span><small>' + escapeHTML(stateLabel) + '</small></div>' + answerMarkup + '<div class="chisme-admin-foot"><small>' + escapeHTML(formatDate(item.created_at)) + '</small>' + action + '</div></article>';
   }).join('');
-  return '<section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTACIÓN DEL CHISMÓGRAFO</span><h3>Respuestas para revisar</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Aprueba las respuestas autorizadas para verlas en el cuadernito público. Puedes desaprobarlas cuando quieras. Los alias solo aparecen aquí, en tu panel.</p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section><section class="chisme-notebook chisme-dashboard-notebook"><span class="chisme-sticker chisme-sticker-jatsi" aria-hidden="true"><b>J</b><i>✦</i></span><span class="chisme-sticker chisme-sticker-katsy" aria-hidden="true"><b>K</b><i>♡</i></span><div class="chisme-notebook-heading"><div><span>VISTA PÚBLICA</span><h3>El cuadernito<br><em>que ve la comunidad.</em></h3></div><p>Así se verán las respuestas aprobadas. Siempre aparecen anónimas.</p></div><div class="chisme-public-wall" id="dashboard-chisme-wall" aria-live="polite"><div class="chisme-wall-empty"><span>✎</span><strong>Cargando el cuadernito…</strong></div></div><div class="chisme-notebook-footer"><span>VISTA PREVIA DEL MURAL</span><span>JATSI <b>×</b> KATSY</span></div></section>';
+  return '<section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTACIÓN DEL CHISMÓGRAFO</span><h3>Respuestas para revisar</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Aprueba las respuestas autorizadas para verlas en el cuadernito público. Puedes desaprobarlas cuando quieras. Los alias solo aparecen aquí, en tu panel.</p><p class="chisme-action-status" id="chisme-admin-status" role="status" hidden></p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section><section class="chisme-notebook chisme-dashboard-notebook"><span class="chisme-sticker chisme-sticker-jatsi" aria-hidden="true"><b>J</b><i>✦</i></span><span class="chisme-sticker chisme-sticker-katsy" aria-hidden="true"><b>K</b><i>♡</i></span><div class="chisme-notebook-heading"><div><span>VISTA PÚBLICA</span><h3>El cuadernito<br><em>que ve la comunidad.</em></h3></div><p>Así se verán las respuestas aprobadas. Siempre aparecen anónimas.</p></div><div class="chisme-public-wall" id="dashboard-chisme-wall" aria-live="polite"><div class="chisme-wall-empty"><span>✎</span><strong>Cargando el cuadernito…</strong></div></div><div class="chisme-notebook-footer"><span>VISTA PREVIA DEL MURAL</span><span>JATSI <b>×</b> KATSY</span></div></section>';
 }
 
 async function setChismePublication(id, publish) {
   const current = state.interactions.find(item => item.id === id);
   if (!current || (publish && current.payload.allow_public !== true)) return;
+  const buttons = $$('[data-publish-chisme="' + id + '"], [data-hide-chisme="' + id + '"]', $('#dashboard-content'));
+  buttons.forEach(button => { button.disabled = true; button.dataset.originalLabel = button.textContent.trim(); button.textContent = publish ? 'Publicando…' : 'Retirando…'; });
+  const statusNode = $('#chisme-admin-status');
+  if (statusNode) { statusNode.hidden = false; statusNode.className = 'chisme-action-status is-working'; statusNode.textContent = publish ? 'Publicando la respuesta en el cuadernito…' : 'Retirando la respuesta del mural…'; }
   const payload = { ...current.payload, public_status: publish ? 'published' : 'private' };
   try {
     if (state.supabase) {
@@ -769,11 +889,16 @@ async function setChismePublication(id, publish) {
         const { error: publicError } = await state.supabase.from('published_chismografo').upsert(rows, { onConflict: 'interaction_id,answer_index' });
         if (publicError) throw publicError;
       } else {
-        const { error: publicError } = await state.supabase.from('published_chismografo').delete().eq('interaction_id', id);
+        const { data: removed, error: publicError } = await state.supabase.from('published_chismografo').delete().eq('interaction_id', id).select('interaction_id');
         if (publicError) throw publicError;
+        if (!removed?.length) throw new Error('No encontramos una publicación activa para retirar. Recarga la página y vuelve a intentarlo.');
       }
-      const { error } = await state.supabase.from('interactions').update({ payload }).eq('id', id);
+      const { data: updatedInteraction, error } = await state.supabase.from('interactions').update({ payload }).eq('id', id).select('id').maybeSingle();
       if (error) throw error;
+      if (!updatedInteraction) throw new Error('Supabase no actualizó la respuesta. Confirma que tu cuenta tenga el rol de administradora.');
+    } else {
+      const local = localInteractions().map(item => item.id === id ? { ...item, payload } : item);
+      localStorage.setItem(localKey, JSON.stringify(local));
     }
     state.interactions = state.interactions.map(item => item.id === id ? { ...item, payload } : item);
     if (!state.supabase) localStorage.setItem(localKey, JSON.stringify(state.interactions));
@@ -782,12 +907,20 @@ async function setChismePublication(id, publish) {
     toast(publish ? 'Respuesta publicada anónimamente en el cuadernito.' : 'Respuesta retirada del mural público.');
   } catch (error) {
     console.error('No se pudo actualizar la publicación del chismógrafo:', error);
-    toast(state.supabase ? 'No pudimos actualizarlo. Vuelve a aplicar supabase/schema.sql para activar las reglas públicas seguras.' : 'No se pudo actualizar la respuesta.');
+    const needsSchema = /published_chismografo|permission|row.level|relation .* does not exist|check constraint|violates|42501|42P01/i.test(String(error?.message || '') + ' ' + String(error?.code || ''));
+    const message = !state.supabase
+      ? 'No hay una base de datos conectada; solo se puede guardar en este navegador.'
+      : needsSchema
+        ? 'Supabase rechazó la publicación. Ejecuta el archivo supabase/schema.sql completo en Supabase → SQL Editor y confirma que tu cuenta siga como administradora.'
+        : 'No se pudo publicar: ' + String(error?.message || 'error de conexión con Supabase');
+    if (statusNode) { statusNode.hidden = false; statusNode.className = 'chisme-action-status is-error'; statusNode.textContent = message; }
+    buttons.forEach(button => { button.disabled = false; button.textContent = button.dataset.originalLabel || 'Intentar de nuevo'; });
+    toast('No se actualizó el mural. Revisa el aviso del panel.');
   }
 }
 
 function activitiesPanel() {
-  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.adminActivities.map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (['wheel', 'poll', 'either'].includes(item.type) ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar</button>' : '') + '<button class="admin-table-action" type="button" data-toggle-activity="' + item.slug + '" aria-label="' + (item.is_active ? 'Pausar ' : 'Activar ') + escapeHTML(item.title) + '"><i class="iconoir-' + (item.is_active ? 'pause' : 'play') + '"></i>' + (item.is_active ? 'Pausar' : 'Activar') + '</button><button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
+  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.adminActivities.filter(item => !isNotebookOrHiddenActivity(item)).map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (['wheel', 'poll', 'either'].includes(item.type) ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar</button>' : '') + '<button class="admin-table-action" type="button" data-toggle-activity="' + item.slug + '" aria-label="' + (item.is_active ? 'Pausar ' : 'Activar ') + escapeHTML(item.title) + '"><i class="iconoir-' + (item.is_active ? 'pause' : 'play') + '"></i>' + (item.is_active ? 'Pausar' : 'Activar') + '</button><button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
 }
 
 async function toggleActivity(slug) {
@@ -880,7 +1013,7 @@ function programmingPanel() {
   const daysUntilMonday = (8 - nextMonday.getDay()) % 7 || 7;
   nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
   const nextLabel = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(nextMonday);
-  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada lunes queda una sola encuesta activa junto a la ruleta y el chismógrafo de una combinación nueva del catálogo de 160. Las dinámicas anteriores se pausan sin borrar su historial.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Una encuesta activa</h4><p>La encuesta de la semana anterior se pausa cuando entra la nueva.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>EN DIRECTO</small><h4>Retos para Jatsi</h4><p>Jatsi gira la ruleta durante el stream: humor y retos generales, sin imitaciones.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>AVISA</small><h4>Chismógrafo y Discord</h4><p>Preguntas nuevas cada semana, y cumpleaños solo con autorización.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Actividades y cumpleaños conectados</h3><p>La rotación usa los tres secretos configurados en GitHub Actions. El cumpleaños solicita solo día y mes, y necesita autorización explícita para anunciar alias y fecha en el servidor de Discord. La cola se revisa cada cinco minutos; al publicarse, esos datos personales se borran de la fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>La rotación deja solo una encuesta semanal activa. El chismógrafo guarda respuestas privadas y tú eliges cuáles autorizaron publicación para aprobarlas anónimamente.</span></div></section>';
+  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada lunes se activa una encuesta y una ruleta nuevas. El chismógrafo permanece fijo en su sección de cuaderno con 50 preguntas; no se cuenta como actividad semanal.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Una encuesta activa</h4><p>La encuesta de la semana anterior se pausa cuando entra la nueva.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>EN DIRECTO</small><h4>Retos para Jatsi</h4><p>Jatsi gira la ruleta durante el stream: humor y retos generales, sin imitaciones.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-book"></i></span><small>EN EL CUADERNO</small><h4>50 preguntas para conocernos</h4><p>Crushes, confesiones y anécdotas. Participación opcional; cumpleaños solo con permiso explícito.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Encuesta, ruleta y avisos de Discord</h3><p>La rotación usa los secretos configurados en GitHub Actions. Los cumpleaños se comparten desde el mismo formulario del cuaderno, solo con apodo, día/mes y permiso explícito. La cola de Discord se revisa cada cinco minutos; después del anuncio, el apodo y la fecha se borran de esa fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Solo se activa una encuesta semanal. Las respuestas del cuaderno son privadas y tú eliges cuáles autorizaron publicación para aprobarlas anónimamente.</span></div></section>';
 }
 
 async function renderDashboard() {

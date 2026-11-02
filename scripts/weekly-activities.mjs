@@ -147,17 +147,7 @@ entries = [
     description: 'Jatsi gira esta ruleta en directo. Los retos son generales, graciosos y siempre de buen rollo.',
     config: { options: plan.wheel.options, host_only: true, campaign: 'weekly', plan_id: plan.id, week: weekKey }
   },
-  {
-    slug: `jatsi-semana-${safeWeek}-chismografo`, type: 'question', title: plan.chismografo.title,
-    description: 'Responde preguntas ligeras sobre tus gustos y el contenido. Evita compartir secretos o datos privados de otras personas.',
-    config: { form_type: 'chismografo', questions: plan.chismografo.questions, campaign: 'weekly', plan_id: plan.id, week: weekKey }
-  }
 ];
-const birthdayActivity = {
-  slug: 'cumpleanos-del-portal', type: 'question', title: 'Cumpleaños del portal',
-  description: 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.',
-  config: { form_type: 'birthday' }, is_active: true
-};
 const baseWheel = {
   slug: 'ruleta-cosmica', type: 'wheel', title: 'Ruleta del directo',
   description: 'Jatsi gira la ruleta en directo y acepta un reto general, gracioso y de buen rollo.',
@@ -171,7 +161,7 @@ async function postDiscord() {
       allowed_mentions: { parse: [] },
       embeds: [{
         title: 'Esta semana: la comunidad decide',
-        description: `**Encuesta:** ${plan.poll.title}\n\n**Dinámica:** ${plan.wheel.title}\n\n**Chismógrafo:** ${plan.chismografo.title}\n\nVota, gira y participa con nosotras.`,
+        description: `**Encuesta:** ${plan.poll.title}\n\n**Dinámica:** ${plan.wheel.title}\n\nEl cuadernito de 50 preguntas siempre está disponible en la página.\n\nVota, gira y participa con nosotras.`,
         url: pageUrl, color: 0xb879ef,
         footer: { text: 'Jatsi × Katsy · Portal semanal' }
       }]
@@ -191,9 +181,11 @@ await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
   method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
   body: JSON.stringify(entries.map(activity => ({ ...activity, is_active: true })))
 });
-await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
-  method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-  body: JSON.stringify([birthdayActivity])
+await supabaseRequest(`/rest/v1/activities?slug=like.${currentPrefix}*-chismografo`, {
+  method: 'PATCH', body: JSON.stringify({ is_active: false })
+});
+await supabaseRequest('/rest/v1/activities?slug=eq.cumpleanos-del-portal', {
+  method: 'PATCH', body: JSON.stringify({ is_active: false })
 });
 for (const activity of activeSurveys.filter(item => item.slug !== weekPollSlug && (item.type === 'poll' || (item.type === 'question' && Array.isArray(item.config?.options))))) {
   await supabaseRequest(`/rest/v1/activities?id=eq.${activity.id}`, {
@@ -206,4 +198,4 @@ for (const activity of oldCampaigns.filter(item => !item.slug.startsWith(current
   });
 }
 await postDiscord();
-console.log(`Semana ${weekKey}: encuesta única, ruleta para Jatsi y chismógrafo activados; aviso publicado en Discord.`);
+console.log(`Semana ${weekKey}: encuesta única y ruleta para Jatsi activadas; el chismógrafo permanece en su cuaderno; aviso publicado en Discord.`);
