@@ -773,29 +773,101 @@ function interactionLabel(item) {
   return 'Interacción registrada';
 }
 
+let publicChismeBooks = [];
+const chismeBookEmotes = ['jatsi_love_112.gif', 'jatsi_lurk_112.gif', 'jatsi_heh_112.gif', 'jatsi_yepp_aprobacion_112.gif', 'jatsi_rave_corregido_112.gif'];
+let activePublicBookIndex = 0;
+let activePublicBookPage = 0;
+let publicBookPageTurning = false;
+
 function renderPublicChisme(items, wallSelector = '#chisme-public-wall') {
   const wall = $(wallSelector);
   if (!wall) return;
-  const answers = items.flatMap(item => item.payload
-    ? (item.payload.answers || []).map(entry => ({ question: entry.question, answer: entry.answer, created_at: item.created_at }))
-    : [{ question: item.question, answer: item.answer, created_at: item.created_at }]);
-  if (!answers.length) {
+  const booksById = new Map();
+  items.forEach((item, index) => {
+    const bookId = item.payload ? item.id : item.interaction_id || 'respuesta-' + index;
+    if (!booksById.has(bookId)) booksById.set(bookId, { id: bookId, created_at: item.created_at, answers: [] });
+    const book = booksById.get(bookId);
+    if (item.payload) {
+      book.answers.push(...(item.payload.answers || []).map((entry, answerIndex) => ({ ...entry, answer_index: answerIndex, created_at: item.created_at })));
+    } else {
+      book.answers.push({ question: item.question, answer: item.answer, answer_index: item.answer_index ?? book.answers.length, created_at: item.created_at });
+    }
+  });
+  publicChismeBooks = [...booksById.values()].map(book => ({
+    ...book,
+    answers: book.answers.sort((a, b) => Number(a.answer_index) - Number(b.answer_index))
+  })).filter(book => book.answers.length).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!publicChismeBooks.length) {
     wall.innerHTML = '<div class="chisme-wall-empty"><span>✎</span><strong>Este cuadernito todavía está en blanco.</strong><small>Responde al chismógrafo. Si autorizas que se comparta, Jatsi puede aprobar tu respuesta para el mural.</small></div>';
     return;
   }
-  wall.innerHTML = answers.slice(0, 12).map((entry, index) => '<article class="chisme-answer-sheet" style="--sheet-tilt:' + (index % 2 ? '1.1' : '-1.2') + 'deg"><span class="chisme-sheet-sticker">' + (index % 2 ? '✦' : '♡') + '</span><small>ANÓNIM@ · ' + escapeHTML(new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' }).format(new Date(entry.created_at))) + '</small><h4>' + escapeHTML(entry.question) + '</h4><p>' + escapeHTML(entry.answer) + '</p><i>J ✿ K</i></article>').join('');
+  wall.innerHTML = publicChismeBooks.map((book, index) => {
+    const preview = book.answers[0] || {};
+    const emote = chismeBookEmotes[index % chismeBookEmotes.length];
+    return '<button class="chisme-public-book" type="button" data-open-public-book="' + index + '" style="--book-tilt:' + (index % 2 ? '1deg' : '-1deg') + '"><span class="chisme-public-book-shine" aria-hidden="true">✧</span><img class="chisme-public-book-emote" src="' + emote + '" alt="Emote de Jatsi" loading="lazy"><span class="chisme-public-book-copy"><small>CUADERNO ANÓNIMO · ' + book.answers.length + (book.answers.length === 1 ? ' RESPUESTA' : ' RESPUESTAS') + '</small><b>Confesiones de la comunidad</b><span>' + escapeHTML(preview.answer || '') + '</span><em>Abrir el cuadernito <i class="iconoir-arrow-up-right"></i></em></span><span class="chisme-public-book-spine" aria-hidden="true"></span></button>';
+  }).join('');
+  $$('[data-open-public-book]', wall).forEach(button => button.addEventListener('click', () => openPublicChismeBook(Number(button.dataset.openPublicBook))));
+}
+
+function renderPublicChismeBookPage() {
+  const book = publicChismeBooks[activePublicBookIndex];
+  const content = $('#public-chisme-book-content');
+  if (!book || !content) return;
+  const pageSize = 4;
+  const pageCount = Math.max(1, Math.ceil(book.answers.length / pageSize));
+  activePublicBookPage = Math.min(Math.max(0, activePublicBookPage), pageCount - 1);
+  const start = activePublicBookPage * pageSize;
+  const pageAnswers = book.answers.slice(start, start + pageSize);
+  const progress = ((activePublicBookPage + 1) / pageCount) * 100;
+  const emote = chismeBookEmotes[(activePublicBookIndex + activePublicBookPage) % chismeBookEmotes.length];
+  content.innerHTML = '<div class="chisme-book-modal-heading"><span><i class="iconoir-book"></i> CUADERNITO ANÓNIMO · JATSI × KATSY</span></div><div class="chisme-book-modal-shell" id="chisme-book-modal-shell"><span class="chisme-book-corner-emote emote-left"><img src="' + chismeBookEmotes[activePublicBookIndex % chismeBookEmotes.length] + '" alt="" aria-hidden="true"></span><span class="chisme-book-corner-emote emote-right"><img src="' + emote + '" alt="" aria-hidden="true"></span><article class="chisme-modal-paper"><header><small>JATSI ✿ KATSY · CONFESIONES BONITAS</small><b>HOJA ' + String(activePublicBookPage + 1).padStart(2, '0') + '</b></header><div class="chisme-modal-paper-title"><span>✧</span><strong>Un poquito de<br>chismecito</strong><span>♡</span></div><div class="chisme-modal-answers">' + pageAnswers.map((entry, index) => '<section class="chisme-modal-answer"><small>' + String(start + index + 1).padStart(2, '0') + ' · PREGUNTA ANÓNIMA</small><h3>' + escapeHTML(entry.question) + '</h3><p>' + escapeHTML(entry.answer) + '</p></section>').join('') + '</div><footer><span>JATSI <b>✿</b> KATSY</span><small>' + new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long' }).format(new Date(book.created_at)) + '</small></footer></article></div><div class="chisme-book-page-controls"><button type="button" id="chisme-book-prev" ' + (activePublicBookPage === 0 ? 'disabled' : '') + '><i class="iconoir-arrow-left"></i> Hoja anterior</button><div class="chisme-book-progress"><span>HOJA ' + (activePublicBookPage + 1) + ' DE ' + pageCount + '</span><i><b style="width:' + progress + '%"></b></i></div><button type="button" id="chisme-book-next" ' + (activePublicBookPage >= pageCount - 1 ? 'disabled' : '') + '>Siguiente hoja <i class="iconoir-arrow-right"></i></button></div>';
+  $('#chisme-book-prev').addEventListener('click', () => turnPublicBookPage(-1));
+  $('#chisme-book-next').addEventListener('click', () => turnPublicBookPage(1));
+}
+
+function turnPublicBookPage(direction) {
+  if (publicBookPageTurning) return;
+  const shell = $('#chisme-book-modal-shell');
+  if (prefersReducedMotion.matches) {
+    activePublicBookPage += direction;
+    renderPublicChismeBookPage();
+    return;
+  }
+  publicBookPageTurning = true;
+  $('#chisme-book-prev').disabled = true;
+  $('#chisme-book-next').disabled = true;
+  shell?.classList.add(direction > 0 ? 'is-turning-forward' : 'is-turning-back');
+  setTimeout(() => {
+    activePublicBookPage += direction;
+    publicBookPageTurning = false;
+    renderPublicChismeBookPage();
+  }, 160);
+}
+
+function openPublicChismeBook(index) {
+  if (!publicChismeBooks[index]) return;
+  activePublicBookIndex = index;
+  activePublicBookPage = 0;
+  publicBookPageTurning = false;
+  renderPublicChismeBookPage();
+  openDialog($('#public-chisme-book-modal'));
 }
 
 async function loadPublicChisme(wallSelector = '#chisme-public-wall') {
   const wall = $(wallSelector);
   if (!wall) return;
   if (state.supabase) {
-    const { data, error } = await state.supabase.from('published_chismografo').select('question,answer,created_at')
-      .order('created_at', { ascending: false }).limit(12);
+    let { data, error } = await state.supabase.from('published_chismografo').select('interaction_id,answer_index,question,answer,created_at')
+      .order('created_at', { ascending: false }).limit(1000);
     if (error) {
       console.warn('No se pudo cargar el mural del chismógrafo:', error);
-      renderPublicChisme([], wallSelector);
-      return;
+      const fallback = await state.supabase.from('published_chismografo').select('question,answer,created_at')
+        .order('created_at', { ascending: false }).limit(1000);
+      if (fallback.error) {
+        renderPublicChisme([], wallSelector);
+        return;
+      }
+      data = (fallback.data || []).map(entry => ({ ...entry, interaction_id: 'legacy-' + entry.created_at, answer_index: chismografoQuestions.findIndex(question => question.question === entry.question) }));
     }
     renderPublicChisme(data || [], wallSelector);
     return;

@@ -34,7 +34,8 @@ create table if not exists public.interactions (
   created_at timestamptz not null default now()
 );
 
--- Solo contiene respuestas ya aprobadas y anónimas; nunca copia alias ni ids de visitantes.
+-- Solo contiene respuestas ya aprobadas y anónimas; interaction_id funciona como
+-- llave opaca para reunir en un cuaderno las respuestas de una misma entrega.
 create table if not exists public.published_chismografo (
   interaction_id uuid not null references public.interactions(id) on delete cascade,
   answer_index smallint not null check (answer_index between 0 and 49),
@@ -232,7 +233,7 @@ grant insert on public.interactions to anon, authenticated;
 grant select on public.interactions to authenticated;
 grant update (payload) on public.interactions to authenticated;
 grant delete on public.interactions to authenticated;
-grant select (question, answer, created_at) on public.published_chismografo to anon;
+grant select (interaction_id, answer_index, question, answer, created_at) on public.published_chismografo to anon;
 grant select (interaction_id, answer_index, question, answer, created_at) on public.published_chismografo to authenticated;
 grant insert (interaction_id, answer_index, question, answer) on public.published_chismografo to authenticated;
 grant update (interaction_id, answer_index, question, answer) on public.published_chismografo to authenticated;
