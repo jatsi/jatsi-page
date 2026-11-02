@@ -174,3 +174,43 @@ for (const item of pending) {
 }
 
 console.log(`Cumpleaños revisados: ${pending.length}; publicados: ${published}; duplicados omitidos: ${duplicates}.`);
+
+// Publica solo una invitación genérica: las respuestas del cuadernito nunca salen de Supabase.
+const chismografoWebhook = process.env.CHISMOGRAFO_WEBHOOK_URL;
+if (!chismografoWebhook) {
+  console.log('Avisos del chismógrafo omitidos: falta configurar CHISMOGRAFO_WEBHOOK_URL.');
+} else {
+  async function updateChismografoStatus(item, discordStatus) {
+    await supabaseRequest(`/rest/v1/interactions?id=eq.${encodeURIComponent(item.id)}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ payload: { ...item.payload, discord_status: discordStatus, discord_posted_at: new Date().toISOString() } })
+    });
+  }
+
+  const chismografoQuery = new URLSearchParams({
+    select: 'id,payload',
+    kind: 'eq.question',
+    'payload->>form_type': 'eq.chismografo',
+    'payload->>public_status': 'eq.published',
+    'payload->>discord_status': 'eq.pending',
+    order: 'created_at.asc',
+    limit: '50'
+  });
+  const approvedChismografos = await supabaseRequest(`/rest/v1/interactions?${chismografoQuery}`);
+  let chismografoAnnouncements = 0;
+  for (const item of approvedChismografos) {
+    const response = await fetch(chismografoWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: `📓 ¡Nuevo cuadernito aprobado! Ya puedes leer un chismógrafo anónimo de la comunidad: https://jatsi.github.io/jatsi-page/#experiencias`,
+        allowed_mentions: { parse: [] }
+      })
+    });
+    if (!response.ok) throw new Error(`Discord no aceptó el aviso del chismógrafo (${response.status}).`);
+    await updateChismografoStatus(item, 'sent');
+    chismografoAnnouncements++;
+  }
+  console.log(`Avisos de chismógrafos aprobados publicados: ${chismografoAnnouncements}.`);
+}

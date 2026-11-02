@@ -969,7 +969,11 @@ async function setChismePublication(id, publish) {
   buttons.forEach(button => { button.disabled = true; button.dataset.originalLabel = button.textContent.trim(); button.textContent = publish ? 'Publicando…' : 'Retirando…'; });
   const statusNode = $('#chisme-admin-status');
   if (statusNode) { statusNode.hidden = false; statusNode.className = 'chisme-action-status is-working'; statusNode.textContent = publish ? 'Publicando la respuesta en el cuadernito…' : 'Retirando la respuesta del mural…'; }
-  const payload = { ...current.payload, public_status: publish ? 'published' : 'private' };
+  const payload = {
+    ...current.payload,
+    public_status: publish ? 'published' : 'private',
+    ...(publish ? { discord_status: 'pending' } : { discord_status: 'withdrawn' })
+  };
   try {
     if (state.supabase) {
       if (publish) {

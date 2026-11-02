@@ -1,0 +1,30 @@
+name: Recordatorio diario del chismógrafo
+
+on:
+  schedule:
+    # 15:00 en Ciudad de México (UTC−6).
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jatsi-chismografo-daily
+  cancel-in-progress: false
+
+jobs:
+  post-reminder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CHISMOGRAFO_WEBHOOK_URL: ${{ secrets.CHISMOGRAFO_WEBHOOK_URL }}
+    steps:
+      - name: Descargar la página
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publicar recordatorio en Discord
+        run: node scripts/post-chismografo-reminder.mjs
