@@ -42,7 +42,10 @@
       <a class="nav-wishlist" href="#apoyo"><i class="iconoir-gift"></i> Wishlist</a>
     </nav>
     <div class="header-actions">
-      <button class="sound-toggle icon-button" type="button" aria-label="Activar música ambiental" title="Activar música ambiental" aria-pressed="false"><i class="iconoir-sound-low"></i></button>
+      <div class="music-player">
+        <button class="sound-toggle icon-button" type="button" aria-label="Reproducir música de violín" title="Reproducir música de violín" aria-pressed="false"><i class="iconoir-play"></i><span class="music-label">Música</span></button>
+        <label class="music-volume"><i class="iconoir-sound-low" aria-hidden="true"></i><input id="music-volume" type="range" min="0" max="0.4" step="0.01" value="0.16" aria-label="Volumen de la música"></label>
+      </div>
       <a class="support-mini" href="#apoyo"><i class="iconoir-heart"></i><span>Apoyar</span></a>
       <button class="account-button" id="account-button" type="button">
         <span class="status-dot"></span>
@@ -355,6 +358,7 @@
       <a class="back-top" href="#inicio">↑</a>
     </div>
     <div class="shell footer-bottom"><span>© 2026 Jatsi Universe</span><span>Hecho en México · Transmitiendo al cosmos</span><nav class="footer-legal" aria-label="Información legal"><a href="uso.html">Uso</a><a href="privacy.html">Privacidad</a><a href="terms.html">Términos</a></nav></div>
+    <div class="shell music-credit">♫ Música: <a href="https://www.scottbuckley.com.au/library/beautiful-oblivion/" target="_blank" rel="noopener noreferrer">“Beautiful Oblivion” — Scott Buckley</a> · CC BY 4.0</div>
   </footer>
 
   <dialog class="modal activity-modal" id="activity-modal">
@@ -403,6 +407,7 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <audio id="background-music" src="assets/music/beautiful-oblivion.mp3" preload="none" loop></audio>
   <aside class="gift-float" id="gift-float" aria-label="Wishlist navideña" hidden>
     <button class="gift-float-close" id="gift-float-close" type="button" aria-label="Cerrar aviso de regalos"><i class="iconoir-xmark"></i></button>
     <div class="gift-float-art" aria-hidden="true"><i class="iconoir-gift"></i><span>✦</span></div>

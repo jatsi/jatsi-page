@@ -1080,124 +1080,49 @@ drawStars();
 addEventListener('resize', resizeCanvas);
 addEventListener('pointermove', event => { pointer = { x: event.clientX, y: event.clientY }; }, { passive: true });
 
-// Música ambiental tonal: un pad suave y una melodía pentatónica lenta.
-let audioContext;
-let audioNodes = [];
-let audioTimer;
-let audioMaster;
-let audioStep = 0;
-const musicChords = [
-  { pad: [130.81, 196, 246.94, 329.63], melody: [523.25, 659.25, 783.99, 659.25] },
-  { pad: [110, 164.81, 220, 261.63], melody: [440, 523.25, 659.25, 523.25] },
-  { pad: [87.31, 130.81, 174.61, 220], melody: [349.23, 440, 523.25, 659.25] },
-  { pad: [98, 146.83, 196, 246.94], melody: [392, 493.88, 587.33, 659.25] }
-];
-
-function stopAmbientMusic() {
-  clearTimeout(audioTimer);
-  if (!audioContext) return;
-  const context = audioContext;
-  const master = audioMaster;
-  audioNodes.forEach(node => { try { node.stop(context.currentTime + 1.2); } catch { /* already stopped */ } });
-  audioNodes = [];
-  if (master && context.state !== 'closed') {
-    master.gain.cancelScheduledValues(context.currentTime);
-    master.gain.setTargetAtTime(0, context.currentTime, .3);
+// Reproductor real: comienza solo cuando la persona lo activa.
+const backgroundMusic = $('#background-music');
+const musicButton = $('#site-header .sound-toggle');
+const musicVolume = $('#music-volume');
+backgroundMusic.volume = Number(musicVolume.value);
+musicVolume.addEventListener('input', () => { backgroundMusic.volume = Number(musicVolume.value); });
+musicButton.addEventListener('click', async () => {
+  if (backgroundMusic.paused) {
+    try {
+      await backgroundMusic.play();
+      musicButton.parentElement.classList.add('is-playing');
+      musicButton.setAttribute('aria-pressed', 'true');
+      musicButton.innerHTML = '<i class="iconoir-pause"></i><span class="music-label">Música</span>';
+      musicButton.setAttribute('aria-label', 'Pausar música de violín');
+      musicButton.title = 'Pausar música de violín';
+    } catch {
+      toast('No se pudo cargar la música. Comprueba tu conexión e inténtalo de nuevo.');
+    }
+  } else {
+    backgroundMusic.pause();
+    musicButton.parentElement.classList.remove('is-playing');
+    musicButton.setAttribute('aria-pressed', 'false');
+    musicButton.innerHTML = '<i class="iconoir-play"></i><span class="music-label">Música</span>';
+    musicButton.setAttribute('aria-label', 'Reproducir música de violín');
+    musicButton.title = 'Reproducir música de violín';
   }
-  audioContext = null;
-  audioMaster = null;
-  setTimeout(() => context.close().catch(() => {}), 1400);
-}
-
-function scheduleMusicStep(context, master) {
-  if (audioContext !== context || context.state === 'closed') return;
-  const chordIndex = Math.floor(audioStep / 4) % musicChords.length;
-  const noteIndex = audioStep % 4;
-  const chord = musicChords[chordIndex];
-  const now = context.currentTime;
-
-  if (audioStep % 4 === 0) {
-    audioNodes.slice(0, 4).forEach((oscillator, index) => {
-      oscillator.frequency.setTargetAtTime(chord.pad[index], now, 1.1);
-    });
-  }
-
-  const oscillator = context.createOscillator();
-  const voice = context.createGain();
-  const filter = context.createBiquadFilter();
-  oscillator.type = 'sine';
-  oscillator.frequency.value = chord.melody[noteIndex];
-  filter.type = 'lowpass';
-  filter.frequency.value = 1650;
-  voice.gain.setValueAtTime(.0001, now);
-  voice.gain.linearRampToValueAtTime(.17, now + .18);
-  voice.gain.exponentialRampToValueAtTime(.0001, now + 1.8);
-  oscillator.connect(filter).connect(voice).connect(master);
-  oscillator.start(now);
-  oscillator.stop(now + 1.85);
-  audioNodes.push(oscillator);
-  oscillator.addEventListener('ended', () => { audioNodes = audioNodes.filter(node => node !== oscillator); }, { once: true });
-  audioStep++;
-  audioTimer = setTimeout(() => scheduleMusicStep(context, master), 1320);
-}
-
-$('#site-header .sound-toggle').addEventListener('click', async event => {
-  const button = event.currentTarget;
-  const active = button.getAttribute('aria-pressed') === 'true';
-  if (active) {
-    stopAmbientMusic();
-    button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = '<i class="iconoir-sound-low"></i>';
-    button.setAttribute('aria-label', 'Activar música ambiental');
-    button.title = 'Activar música ambiental';
-    return;
-  }
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) {
-    toast('La música ambiental no está disponible en este navegador.');
-    return;
-  }
-  audioContext = new AudioContextClass();
-  if (audioContext.state === 'suspended') await audioContext.resume();
-  audioMaster = audioContext.createGain();
-  audioMaster.gain.setValueAtTime(.0001, audioContext.currentTime);
-  audioMaster.gain.linearRampToValueAtTime(.3, audioContext.currentTime + 2.5);
-  audioMaster.connect(audioContext.destination);
-  const context = audioContext;
-  const master = audioMaster;
-  musicChords[0].pad.forEach((frequency, index) => {
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const filter = audioContext.createBiquadFilter();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = frequency;
-    filter.type = 'lowpass';
-    filter.frequency.value = 650;
-    gain.gain.setValueAtTime(.0001, audioContext.currentTime);
-    gain.gain.linearRampToValueAtTime(index === 0 ? .055 : .045, audioContext.currentTime + 4);
-    oscillator.connect(filter).connect(gain).connect(master);
-    oscillator.start();
-    audioNodes.push(oscillator);
-  });
-  audioStep = 0;
-  scheduleMusicStep(context, master);
-  button.setAttribute('aria-pressed', 'true');
-  button.innerHTML = '<i class="iconoir-sound-high"></i>';
-  button.setAttribute('aria-label', 'Desactivar música ambiental');
-  button.title = 'Desactivar música ambiental';
 });
-
-document.addEventListener('visibilitychange', async () => {
-  if (!audioContext || audioContext.state === 'closed') return;
+backgroundMusic.addEventListener('error', () => {
+  musicButton.parentElement.classList.remove('is-playing');
+  musicButton.setAttribute('aria-pressed', 'false');
+  musicButton.innerHTML = '<i class="iconoir-play"></i><span class="music-label">Música</span>';
+  toast('No se pudo cargar la pista de violín.');
+});
+let resumeMusicWhenVisible = false;
+document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    clearTimeout(audioTimer);
-    await audioContext.suspend();
-  } else if (audioContext.state === 'suspended') {
-    await audioContext.resume();
-    scheduleMusicStep(audioContext, audioMaster);
+    resumeMusicWhenVisible = !backgroundMusic.paused;
+    if (resumeMusicWhenVisible) backgroundMusic.pause();
+  } else if (resumeMusicWhenVisible) {
+    resumeMusicWhenVisible = false;
+    backgroundMusic.play().catch(() => {});
   }
 });
-
 // A small dismissible invitation makes the holiday registry visible without
 // covering the page. It stays dismissed for the current browsing session.
 const giftFloat = $('#gift-float');

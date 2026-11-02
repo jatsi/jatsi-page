@@ -103,3 +103,7 @@ Para activarlo una sola vez:
 La primera ejecución crea un bucket público llamado `weekly-ig-stories` en Supabase Storage para alojar la imagen vertical de la historia. Instagram Stories requiere permisos de publicación y cuenta profesional Business; una historia es un aviso público temporal, no un DM masivo.
 
 Si falta cualquiera de los secretos, la ejecución se detiene antes de modificar actividades. GitHub conserva el historial de cada ejecución y muestra errores de conexión cuando un canal no acepta la publicación.
+
+## Música del sitio
+
+La música opcional se reproduce solo cuando la persona pulsa el botón. “Beautiful Oblivion” de Scott Buckley está bajo CC BY 4.0 y se acredita también en el pie de la página.
