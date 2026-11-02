@@ -34,6 +34,16 @@ create table if not exists public.interactions (
   created_at timestamptz not null default now()
 );
 
+-- Solo contiene respuestas ya aprobadas y anónimas; nunca copia alias ni ids de visitantes.
+create table if not exists public.published_chismografo (
+  interaction_id uuid not null references public.interactions(id) on delete cascade,
+  answer_index smallint not null check (answer_index between 0 and 5),
+  question text not null check (char_length(question) <= 300),
+  answer text not null check (char_length(answer) between 1 and 300),
+  created_at timestamptz not null default now(),
+  primary key (interaction_id, answer_index)
+);
+
 create index if not exists interactions_activity_created_idx on public.interactions(activity_id, created_at desc);
 create index if not exists interactions_user_created_idx on public.interactions(user_id, created_at desc);
 create index if not exists interactions_kind_created_idx on public.interactions(kind, created_at desc);
@@ -101,6 +111,7 @@ grant execute on function public.is_admin() to authenticated;
 alter table public.profiles enable row level security;
 alter table public.activities enable row level security;
 alter table public.interactions enable row level security;
+alter table public.published_chismografo enable row level security;
 
 drop policy if exists "profiles_select_self_or_admin" on public.profiles;
 create policy "profiles_select_self_or_admin"
@@ -161,9 +172,41 @@ on public.interactions for select
 to authenticated
 using (user_id = (select auth.uid()) or (select public.is_admin()));
 
+drop policy if exists "interactions_admin_update_chismografo" on public.interactions;
+create policy "interactions_admin_update_chismografo"
+on public.interactions for update
+to authenticated
+using ((select public.is_admin()) and kind = 'question' and payload ->> 'form_type' = 'chismografo')
+with check ((select public.is_admin()) and kind = 'question' and payload ->> 'form_type' = 'chismografo');
+
 drop policy if exists "interactions_admin_delete" on public.interactions;
 create policy "interactions_admin_delete"
 on public.interactions for delete
+to authenticated
+using ((select public.is_admin()));
+
+drop policy if exists "published_chismografo_public_read" on public.published_chismografo;
+create policy "published_chismografo_public_read"
+on public.published_chismografo for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "published_chismografo_admin_insert" on public.published_chismografo;
+create policy "published_chismografo_admin_insert"
+on public.published_chismografo for insert
+to authenticated
+with check ((select public.is_admin()));
+
+drop policy if exists "published_chismografo_admin_update" on public.published_chismografo;
+create policy "published_chismografo_admin_update"
+on public.published_chismografo for update
+to authenticated
+using ((select public.is_admin()))
+with check ((select public.is_admin()));
+
+drop policy if exists "published_chismografo_admin_delete" on public.published_chismografo;
+create policy "published_chismografo_admin_delete"
+on public.published_chismografo for delete
 to authenticated
 using ((select public.is_admin()));
 
@@ -171,18 +214,26 @@ using ((select public.is_admin()));
 revoke all on public.profiles from anon, authenticated;
 revoke all on public.activities from anon, authenticated;
 revoke all on public.interactions from anon, authenticated;
+revoke all on public.published_chismografo from anon, authenticated;
 
 grant select on public.activities to anon, authenticated;
 grant insert, update, delete on public.activities to authenticated;
 grant select on public.profiles to authenticated;
 grant update (display_name) on public.profiles to authenticated;
 grant insert on public.interactions to anon, authenticated;
-grant select, delete on public.interactions to authenticated;
+grant select on public.interactions to authenticated;
+grant update (payload) on public.interactions to authenticated;
+grant delete on public.interactions to authenticated;
+grant select (question, answer, created_at) on public.published_chismografo to anon;
+grant select (interaction_id, answer_index, question, answer, created_at) on public.published_chismografo to authenticated;
+grant insert (interaction_id, answer_index, question, answer) on public.published_chismografo to authenticated;
+grant update (interaction_id, answer_index, question, answer) on public.published_chismografo to authenticated;
+grant delete on public.published_chismografo to authenticated;
 
 -- Actividades iniciales que coinciden con los enlaces de la página.
 insert into public.activities (id, slug, type, title, description, config)
 values
-  ('11111111-1111-4111-8111-111111111111', 'ruleta-cosmica', 'wheel', 'Ruleta cósmica', 'El universo elige el reto del próximo stream.', '{"options":["Cantar una canción","Reto sin reír","Chat elige el juego","Historia vergonzosa","Imitar a Katsy","Sorpresa del cosmos"]}'),
+  ('11111111-1111-4111-8111-111111111111', 'ruleta-cosmica', 'wheel', 'Ruleta del directo', 'Jatsi gira la ruleta en directo y acepta un reto general, gracioso y de buen rollo.', '{"options":["Cuenta una anécdota vergonzosa, pero apta para todo público","Di un trabalenguas tres veces, cada vez más rápido","Narra tu siguiente jugada como final de telenovela","Haz una pose dramática de victoria durante cinco segundos","Inventa una excusa absurda para llegar tarde a una misión","Canta una frase inventada con voz de estrella de ópera"],"host_only":true}'),
   ('22222222-2222-4222-8222-222222222222', 'proximo-stream', 'poll', '¿Qué hacemos en el próximo stream?', 'Tu voto ayuda a diseñar la siguiente aventura.', '{"options":["Noche de terror","Tier list de anime","Just chatting","Juego con la comunidad"]}'),
   ('33333333-3333-4333-8333-333333333333', 'buzon-secreto', 'message', 'Buzón secreto', 'Comparte una confesión, un pensamiento o algo que quieras decirle a Jatsi.', '{"placeholder":"Escribe desde el corazón…","max_length":600}'),
   ('44444444-4444-4444-8444-444444444444', 'esto-o-aquello', 'either', 'Esto o aquello', 'No lo pienses demasiado. Elige tu lado.', '{"options":["Anime toda la noche","Gaming hasta el amanecer"]}'),
@@ -191,6 +242,12 @@ values
   ('77777777-7777-4777-8777-777777777777', 'cumpleanos-del-portal', 'question', 'Cumpleaños del portal', 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.', '{"form_type":"birthday"}'),
   ('88888888-8888-4888-8888-888888888888', 'chismografo-del-portal', 'question', 'Chismógrafo del portal', 'Preguntas ligeras para compartir gustos, ideas y anécdotas divertidas de la comunidad.', '{"form_type":"chismografo","questions":["¿Qué gusto culposo defenderías con orgullo?","¿Qué momento del stream te ha hecho reír más?","¿Qué juego o tema te gustaría ver en el portal?"]}')
 on conflict (slug) do nothing;
+
+update public.activities
+set title = 'Ruleta del directo',
+    description = 'Jatsi gira la ruleta en directo y acepta un reto general, gracioso y de buen rollo.',
+    config = '{"options":["Cuenta una anécdota vergonzosa, pero apta para todo público","Di un trabalenguas tres veces, cada vez más rápido","Narra tu siguiente jugada como final de telenovela","Haz una pose dramática de victoria durante cinco segundos","Inventa una excusa absurda para llegar tarde a una misión","Canta una frase inventada con voz de estrella de ópera"],"host_only":true}'::jsonb
+where slug = 'ruleta-cosmica';
 
 -- Realtime: ignora el error si la tabla ya fue agregada.
 do $$

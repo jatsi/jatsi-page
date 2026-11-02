@@ -13,14 +13,23 @@ const configured = Boolean(
   !SUPABASE_PUBLISHABLE_KEY.includes('TU-CLAVE')
 );
 
+const defaultWheelOptions = [
+  'Cuenta una anécdota vergonzosa, pero apta para todo público',
+  'Di un trabalenguas tres veces, cada vez más rápido',
+  'Narra tu siguiente jugada como final de telenovela',
+  'Haz una pose dramática de victoria durante cinco segundos',
+  'Inventa una excusa absurda para llegar tarde a una misión',
+  'Canta una frase inventada con voz de estrella de ópera'
+];
+
 const seedActivities = [
   {
     id: '11111111-1111-4111-8111-111111111111',
     slug: 'ruleta-cosmica',
     type: 'wheel',
-    title: 'Ruleta cósmica',
-    description: 'El universo elige el reto del próximo stream.',
-    config: { options: ['Cantar una canción', 'Reto sin reír', 'Chat elige el juego', 'Historia vergonzosa', 'Imitar a Katsy', 'Sorpresa del cosmos'] },
+    title: 'Ruleta del directo',
+    description: 'Jatsi gira la ruleta en directo y acepta un reto general, gracioso y de buen rollo.',
+    config: { options: defaultWheelOptions, host_only: true },
     is_active: true
   },
   {
@@ -262,14 +271,17 @@ function renderActivity(activity) {
   const share = '<div class="share-row"><button class="button button-glass" type="button" data-share-current><i class="iconoir-send-diagonal"></i> Copiar enlace para Discord</button></div>';
 
   if (activity.type === 'wheel') {
-    container.innerHTML = intro + '<div class="roulette-card"><div class="roulette-card-heading"><span><i class="iconoir-sparks"></i>DESTINO ALEATORIO</span><small>' + options.length + ' OPCIONES · TODAS LAS FORTUNAS</small></div><div class="wheel-stage">' + wheelMarkup(options) + '</div>' + wheelLegend(options) + '<button class="button button-primary" id="spin-wheel" type="button"><i class="iconoir-refresh-double"></i> Girar la ruleta</button><div id="activity-result"></div></div>' + share + '</div>';
-    $('#spin-wheel').addEventListener('click', () => spinWheel(activity));
+    const hostOnly = activity.config?.host_only === true;
+    const canSpin = !hostOnly || state.profile?.role === 'admin';
+    const hostNote = hostOnly && !canSpin ? '<p class="message-privacy-note"><i class="iconoir-lock"></i>Esta ruleta la gira Jatsi durante el directo. Inicia sesión con su cuenta administradora para activarla.</p>' : '';
+    container.innerHTML = intro + '<div class="roulette-card"><div class="roulette-card-heading"><span><i class="iconoir-sparks"></i>RETO PARA EL DIRECTO</span><small>' + options.length + ' RETOS · HUMOR DE BUEN ROLLO</small></div><div class="wheel-stage">' + wheelMarkup(options) + '</div>' + wheelLegend(options) + hostNote + '<button class="button button-primary" id="spin-wheel" type="button" ' + (canSpin ? '' : 'disabled') + '><i class="iconoir-refresh-double"></i> ' + (hostOnly ? 'Girar en directo' : 'Girar la ruleta') + '</button><div id="activity-result"></div></div>' + share + '</div>';
+    if (canSpin) $('#spin-wheel').addEventListener('click', () => spinWheel(activity));
   } else if (activity.type === 'poll' || activity.type === 'either') {
     container.innerHTML = intro + '<div class="choice-list">' + options.map((option, index) => '<button class="choice-button" type="button" data-choice="' + index + '"><i class="' + icon + '"></i><span>' + escapeHTML(option) + '</span><b>' + String(index + 1).padStart(2, '0') + '</b></button>').join('') + '</div><div id="activity-result"></div>' + share + '</div>';
     $$('[data-choice]', container).forEach(button => button.addEventListener('click', () => vote(activity, Number(button.dataset.choice), button)));
   } else if (activity.type === 'question' && activity.config?.form_type === 'chismografo') {
     const questions = Array.isArray(activity.config?.questions) ? activity.config.questions.slice(0, 6) : [];
-    container.innerHTML = intro + '<form class="activity-form chisme-form" id="chisme-form">' + questions.map((question, index) => '<label class="chisme-question"><span><i class="iconoir-chat-bubble-question"></i>' + String(index + 1).padStart(2, '0') + ' / ' + escapeHTML(question) + '</span><textarea name="answer_' + index + '" maxlength="300" placeholder="Cuéntanos tu respuesta…"></textarea></label>').join('') + '<label><span><i class="iconoir-user"></i>Tu alias <small>(opcional)</small></span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="Puedes responder de forma anónima"></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Tus respuestas solo las verá Jatsi en el panel. Comparte anécdotas ligeras; no incluyas secretos ni datos privados de otras personas.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Enviar mis respuestas</button><p class="form-status" role="status"></p></form>' + share + '</div>';
+    container.innerHTML = intro + '<form class="activity-form chisme-form" id="chisme-form">' + questions.map((question, index) => '<label class="chisme-question"><span><i class="iconoir-chat-bubble-question"></i>' + String(index + 1).padStart(2, '0') + ' / ' + escapeHTML(question) + '</span><textarea name="answer_' + index + '" maxlength="300" placeholder="Cuéntanos tu respuesta…"></textarea></label>').join('') + '<label><span><i class="iconoir-user"></i>Tu alias <small>(solo para el panel privado)</small></span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="Opcional; en el mural sales anónim@"></label><label class="consent-label chisme-consent"><input name="allow_public" type="checkbox"><span>Autorizo que Jatsi pueda aprobar y publicar mis respuestas juntas, siempre de forma anónima.</span></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Jatsi verá todas las respuestas en su panel. Solo se mostrarán públicamente si marcas la autorización y ella las aprueba; nunca se muestra tu alias. No incluyas secretos ni datos privados de otras personas.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Enviar mis respuestas</button><p class="form-status" role="status"></p></form>' + share + '</div>';
     $('#chisme-form').addEventListener('submit', event => sendChismografo(event, activity));
   } else if (activity.type === 'question' && activity.config?.form_type === 'birthday') {
     const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -391,7 +403,7 @@ async function sendChismografo(event, activity) {
   status.textContent = 'Guardando tus respuestas…';
   const displayName = String(data.get('display_name') || '').trim().slice(0, 40);
   try {
-    await recordInteraction(activity, 'question', { form_type: 'chismografo', answers, display_name: displayName || null, anonymous: !displayName });
+    await recordInteraction(activity, 'question', { form_type: 'chismografo', answers, display_name: displayName || null, anonymous: !displayName, allow_public: Boolean(data.get('allow_public')), public_status: data.get('allow_public') ? 'pending' : 'private' });
     form.reset();
     status.textContent = state.supabase ? '¡Listo! Tus respuestas quedaron en el panel privado de Jatsi.' : 'Guardado solo en este navegador de demostración; conecta Supabase para enviarlo al panel.';
   } catch (error) {
@@ -647,6 +659,36 @@ function interactionLabel(item) {
   return 'Interacción registrada';
 }
 
+function renderPublicChisme(items) {
+  const wall = $('#chisme-public-wall');
+  if (!wall) return;
+  const answers = items.flatMap(item => item.payload
+    ? (item.payload.answers || []).map(entry => ({ question: entry.question, answer: entry.answer, created_at: item.created_at }))
+    : [{ question: item.question, answer: item.answer, created_at: item.created_at }]);
+  if (!answers.length) {
+    wall.innerHTML = '<div class="chisme-wall-empty"><span>✎</span><strong>Este cuadernito todavía está en blanco.</strong><small>Responde al chismógrafo. Si autorizas que se comparta, Jatsi puede aprobar tu respuesta para el mural.</small></div>';
+    return;
+  }
+  wall.innerHTML = answers.slice(0, 12).map((entry, index) => '<article class="chisme-answer-sheet" style="--sheet-tilt:' + (index % 2 ? '1.1' : '-1.2') + 'deg"><span class="chisme-sheet-sticker">' + (index % 2 ? '✦' : '♡') + '</span><small>ANÓNIM@ · ' + escapeHTML(new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' }).format(new Date(entry.created_at))) + '</small><h4>' + escapeHTML(entry.question) + '</h4><p>' + escapeHTML(entry.answer) + '</p><i>J ✿ K</i></article>').join('');
+}
+
+async function loadPublicChisme() {
+  const wall = $('#chisme-public-wall');
+  if (!wall) return;
+  if (state.supabase) {
+    const { data, error } = await state.supabase.from('published_chismografo').select('question,answer,created_at')
+      .order('created_at', { ascending: false }).limit(12);
+    if (error) {
+      console.warn('No se pudo cargar el mural del chismógrafo:', error);
+      renderPublicChisme([]);
+      return;
+    }
+    renderPublicChisme(data || []);
+    return;
+  }
+  renderPublicChisme(localInteractions().filter(item => item.payload?.form_type === 'chismografo' && item.payload?.public_status === 'published'));
+}
+
 function historyHTML(items, emptyMessage = 'Todavía no hay estrellas por aquí.') {
   if (!items.length) return '<div class="empty-state"><span><i class="iconoir-sparks"></i></span>' + emptyMessage + '</div>';
   return '<div class="history-list">' + items.map(item => {
@@ -694,8 +736,50 @@ function userOverview() {
 }
 
 function messagesPanel() {
-  const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind));
-  return '<section class="panel"><h3>Mensajes recibidos</h3>' + historyHTML(messages, 'Aún no han llegado mensajes.') + '</section>';
+  const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind) && item.payload?.form_type !== 'chismografo');
+  const chismes = state.interactions.filter(item => item.payload?.form_type === 'chismografo');
+  const cards = chismes.map(item => {
+    const canPublish = item.payload.allow_public === true;
+    const published = item.payload.public_status === 'published';
+    const stateLabel = published ? 'Publicado en el mural' : canPublish ? 'Privado · esperando revisión' : 'Privado · sin permiso de publicación';
+    const answerMarkup = (item.payload.answers || []).map(answer => '<div class="chisme-admin-answer"><small>' + escapeHTML(answer.question) + '</small><p>' + escapeHTML(answer.answer) + '</p></div>').join('');
+    const action = published
+      ? '<button class="admin-table-action" type="button" data-hide-chisme="' + item.id + '"><i class="iconoir-eye-closed"></i>Ocultar del mural</button>'
+      : canPublish
+        ? '<button class="admin-table-action" type="button" data-publish-chisme="' + item.id + '"><i class="iconoir-eye"></i>Publicar anónimo</button>'
+        : '<span class="chisme-private-lock"><i class="iconoir-lock"></i> No autorizó</span>';
+    return '<article class="chisme-admin-card"><div class="chisme-admin-top"><span>✎ RESPUESTA DE ' + escapeHTML(item.payload.display_name || 'ANÓNIM@') + '</span><small>' + escapeHTML(stateLabel) + '</small></div>' + answerMarkup + '<div class="chisme-admin-foot"><small>' + escapeHTML(formatDate(item.created_at)) + '</small>' + action + '</div></article>';
+  }).join('');
+  return '<section class="panel"><h3>Mensajes recibidos</h3>' + historyHTML(messages, 'Aún no han llegado mensajes.') + '</section><section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">CUADERNITO DE LA COMUNIDAD</span><h3>Revisa antes de compartir</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Solo puedes publicar las respuestas con autorización. El mural público siempre oculta los alias; puedes retirarlas cuando quieras.</p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section>';
+}
+
+async function setChismePublication(id, publish) {
+  const current = state.interactions.find(item => item.id === id);
+  if (!current || (publish && current.payload.allow_public !== true)) return;
+  const payload = { ...current.payload, public_status: publish ? 'published' : 'private' };
+  try {
+    if (state.supabase) {
+      if (publish) {
+        const rows = (current.payload.answers || []).map((answer, answerIndex) => ({ interaction_id: id, answer_index: answerIndex, question: answer.question, answer: answer.answer }));
+        if (!rows.length) throw new Error('No hay respuestas para publicar.');
+        const { error: publicError } = await state.supabase.from('published_chismografo').upsert(rows, { onConflict: 'interaction_id,answer_index' });
+        if (publicError) throw publicError;
+      } else {
+        const { error: publicError } = await state.supabase.from('published_chismografo').delete().eq('interaction_id', id);
+        if (publicError) throw publicError;
+      }
+      const { error } = await state.supabase.from('interactions').update({ payload }).eq('id', id);
+      if (error) throw error;
+    }
+    state.interactions = state.interactions.map(item => item.id === id ? { ...item, payload } : item);
+    if (!state.supabase) localStorage.setItem(localKey, JSON.stringify(state.interactions));
+    await loadPublicChisme();
+    await renderDashboard();
+    toast(publish ? 'Respuesta publicada anónimamente en el cuadernito.' : 'Respuesta retirada del mural público.');
+  } catch (error) {
+    console.error('No se pudo actualizar la publicación del chismógrafo:', error);
+    toast(state.supabase ? 'No pudimos actualizarlo. Vuelve a aplicar supabase/schema.sql para activar las reglas públicas seguras.' : 'No se pudo actualizar la respuesta.');
+  }
 }
 
 function activitiesPanel() {
@@ -792,7 +876,7 @@ function programmingPanel() {
   const daysUntilMonday = (8 - nextMonday.getDay()) % 7 || 7;
   nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
   const nextLabel = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(nextMonday);
-  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada semana se activa una combinación distinta de un catálogo de 160, sin repetir. Encuesta, ruleta y chismógrafo quedan guardados en Supabase para tus estadísticas.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Encuesta nueva</h4><p>La comunidad elige el juego, el plan o el mood del siguiente directo.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>JUEGA</small><h4>Ruleta y chismógrafo</h4><p>Retos para el stream y preguntas ligeras para conocer a la comunidad.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>AVISA</small><h4>Aviso en Discord</h4><p>También se publican ahí, con autorización, los cumpleaños compartidos.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Actividades y cumpleaños conectados</h3><p>La rotación usa los tres secretos configurados en GitHub Actions. El cumpleaños solicita solo día y mes, y necesita autorización explícita para anunciar alias y fecha en el servidor de Discord. La cola se revisa cada cinco minutos; al publicarse, esos datos personales se borran de la fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Las actividades anteriores quedan en el historial y el catálogo se detiene antes de repetir una combinación. Las respuestas del chismógrafo solo las ve la administración.</span></div></section>';
+  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada lunes queda una sola encuesta activa junto a la ruleta y el chismógrafo de una combinación nueva del catálogo de 160. Las dinámicas anteriores se pausan sin borrar su historial.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Una encuesta activa</h4><p>La encuesta de la semana anterior se pausa cuando entra la nueva.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>EN DIRECTO</small><h4>Retos para Jatsi</h4><p>Jatsi gira la ruleta durante el stream: humor y retos generales, sin imitaciones.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>AVISA</small><h4>Chismógrafo y Discord</h4><p>Preguntas nuevas cada semana, y cumpleaños solo con autorización.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Actividades y cumpleaños conectados</h3><p>La rotación usa los tres secretos configurados en GitHub Actions. El cumpleaños solicita solo día y mes, y necesita autorización explícita para anunciar alias y fecha en el servidor de Discord. La cola se revisa cada cinco minutos; al publicarse, esos datos personales se borran de la fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>La rotación deja solo una encuesta semanal activa. El chismógrafo guarda respuestas privadas y tú eliges cuáles autorizaron publicación para aprobarlas anónimamente.</span></div></section>';
 }
 
 async function renderDashboard() {
@@ -832,6 +916,8 @@ async function renderDashboard() {
   }));
   $$('[data-share-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => shareActivity(activityBySlug(button.dataset.shareActivity))));
   $$('[data-toggle-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => toggleActivity(button.dataset.toggleActivity)));
+  $$('[data-publish-chisme]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => setChismePublication(button.dataset.publishChisme, true)));
+  $$('[data-hide-chisme]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => setChismePublication(button.dataset.hideChisme, false)));
   $$('[data-edit-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
     state.editingActivitySlug = button.dataset.editActivity;
     state.dashboardTab = 'create';
@@ -995,6 +1081,13 @@ async function initSupabase() {
           state.interactions.unshift(payload.new);
           if ($('#dashboard').open) renderDashboard();
         }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'interactions' }, payload => {
+        if (state.profile?.role === 'admin') {
+          state.interactions = state.interactions.map(item => item.id === payload.new.id ? payload.new : item);
+          if ($('#dashboard').open) renderDashboard();
+        }
+        if (payload.new.payload?.form_type === 'chismografo') loadPublicChisme();
       })
       .subscribe();
   } catch (error) {
@@ -1344,6 +1437,7 @@ if (clipTrack) {
 // Initial deep link and startup. Keeping this as a regular script also lets the
 // static page open directly from disk without browsers blocking ES modules.
 initSupabase().finally(() => {
+  loadPublicChisme();
   setTimeout(() => $('#portal-intro').classList.add('done'), prefersReducedMotion.matches ? 0 : 950);
   const deepLink = new URL(location.href).searchParams.get('activity');
   if (deepLink) {

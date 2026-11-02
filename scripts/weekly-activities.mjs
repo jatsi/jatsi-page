@@ -22,26 +22,26 @@ const weekKey = `${isoYear}-W${String(isoWeek).padStart(2, '0')}`;
 const safeWeek = weekKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
 const topics = [
-  { id: 'terror', label: 'la noche de terror', pollOptions: ['Terror psicológico', 'Casa embrujada', 'Criaturas extrañas', 'Historias del chat'], wheelOptions: ['Juega sin mirar el mapa', 'Narra el susto como telenovela', 'Deja que el chat elija la ruta', 'Haz una pausa dramática', 'Imita al monstruo', 'Cuenta tu leyenda urbana'] },
-  { id: 'cozy', label: 'el stream cozy', pollOptions: ['Juego de granjita', 'Decoramos juntas', 'Charla con cafecito', 'Aventura relajada'], wheelOptions: ['Diseña una habitación', 'Ponle nombre a una mascota', 'Cuenta tu plan perfecto', 'Haz una recomendación cozy', 'Elige el próximo objeto', 'Inventa una mini historia'] },
-  { id: 'gaming', label: 'el próximo reto gaming', pollOptions: ['Una partida cooperativa', 'Modo difícil', 'Juego indie sorpresa', 'El chat decide el juego'], wheelOptions: ['Juega una ronda sin saltar', 'Usa el objeto menos popular', 'Deja que el chat elija personaje', 'Haz la siguiente misión sin mapa', 'Prueba una estrategia absurda', 'Revancha con una regla nueva'] },
-  { id: 'anime', label: 'la noche de anime', pollOptions: ['Teorías locas', 'Tier list de personajes', 'Adivina el opening', 'Recomendaciones del chat'], wheelOptions: ['Defiende a un personaje impopular', 'Inventa un opening para el canal', 'Haz una pose de protagonista', 'Crea un poder para Katsy', 'Describe un anime en tres pistas', 'El chat elige tu personaje'] },
-  { id: 'comunidad', label: 'el plan de la comunidad', pollOptions: ['Jugar con seguidores', 'Noche de clips', 'Preguntas y respuestas', 'Concurso de dibujos'], wheelOptions: ['Lee un mensaje con voz épica', 'El chat inventa un apodo', 'Responde una pregunta sorpresa', 'Recrea un momento del canal', 'Agradece a una estrella del chat', 'Propón el siguiente juego'] },
-  { id: 'lore', label: 'el lore de Jatsi y Katsy', pollOptions: ['Una historia de Jatsi', 'Un secreto de Katsy', 'Crossover inesperado', 'Que el chat escriba el final'], wheelOptions: ['Inventa un planeta nuevo', 'Cuenta un recuerdo del portal', 'Crea un villano para el lore', 'El chat elige el siguiente capítulo', 'Ponle nombre a una constelación', 'Improvisa un final dramático'] },
-  { id: 'clips', label: 'la noche de clips', pollOptions: ['Fails legendarios', 'Momentos tiernos', 'Reacciones inesperadas', 'Clips enviados por el chat'], wheelOptions: ['Recrea un fail famoso', 'Ponle narración de documental', 'Inventa un título para el clip', 'El chat escoge la siguiente reacción', 'Haz una predicción antes de verlo', 'Cuenta el detrás de cámaras'] },
-  { id: 'roleplay', label: 'la aventura de rol', pollOptions: ['Misterio detectivesco', 'Fantasía mágica', 'Comedia caótica', 'Ciencia ficción'], wheelOptions: ['Interpreta a una villana elegante', 'Crea un hechizo en vivo', 'Habla como NPC por una ronda', 'Deja que el chat elija tu misión', 'Inventa un objeto legendario', 'Improvisa una escena de escape'] },
-  { id: 'vtuber', label: 'el especial VTuber', pollOptions: ['Preguntas del chat', 'Dibujo de avatar', 'Mímica de emociones', 'Historias del modelo'], wheelOptions: ['Haz una pose de victoria', 'Imita una expresión del avatar', 'Inventa un accesorio nuevo', 'Cuenta un dato del modelo', 'El chat elige una emoción', 'Describe tu avatar como jefa final'] },
-  { id: 'musica', label: 'la sesión musical', pollOptions: ['Adivina la canción', 'Opening de anime', 'Playlist del chat', 'Karaoke de broma'], wheelOptions: ['Tararea una canción para adivinar', 'Inventa una letra para el canal', 'Haz una entrada de estrella pop', 'El chat elige el siguiente género', 'Describe una canción sin nombrarla', 'Dedica una melodía al chat'] },
-  { id: 'preguntas', label: 'la charla de preguntas', pollOptions: ['Preguntas divertidas', 'Historias vergonzosas', 'Metas de la comunidad', 'Confesiones ligeras'], wheelOptions: ['Responde con una sola palabra', 'Cuenta una anécdota en un minuto', 'Deja que el chat haga una pregunta', 'Responde como Katsy', 'Responde como Jatsi', 'Inventa una pregunta para el chat'] },
-  { id: 'competencia', label: 'el torneo amistoso', pollOptions: ['Duelo Jatsi contra Katsy', 'Reto por equipos', 'Chat contra streamer', 'Mini campeonato sorpresa'], wheelOptions: ['Juega la siguiente ronda con handicap', 'El chat elige tu rival', 'Celebra como campeona', 'Haz una revancha relámpago', 'Ponle nombre al torneo', 'Predice quién gana la próxima ronda'] },
-  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'], wheelOptions: ['Saluda como duende', 'Cuenta un recuerdo bonito', 'Elige un reto bajo el árbol', 'Haz una pose de postal', 'Inventa un regalo para el chat', 'Brinda virtualmente con la comunidad'] },
-  { id: 'arte', label: 'el taller de arte del chat', pollOptions: ['Dibujar un avatar', 'Diseñar una criatura', 'Hacer fanart en directo', 'Crear un emote nuevo'], wheelOptions: ['Dibuja con la mano no dominante', 'Inventa un emote en 30 segundos', 'Ponle nombre a una criatura', 'El chat elige tres colores', 'Haz un boceto a ciegas', 'Describe tu obra como museo'] },
-  { id: 'speedrun', label: 'el speedrun amistoso', pollOptions: ['Récord contrarreloj', 'Ruta sin atajos', 'Reto con una mano', 'Carrera contra el chat'], wheelOptions: ['Intenta la ruta más segura', 'Juega una ronda sin correr', 'El chat elige tu equipo', 'Repite el nivel con reto', 'Haz una predicción de tiempo', 'Celebra cualquier récord'] },
-  { id: 'cocina', label: 'la charla de snacks', pollOptions: ['Dulce favorito', 'Snack de madrugada', 'Comida de comfort', 'Receta imposible'], wheelOptions: ['Inventa un snack para Jatsi', 'Describe tu antojo en tres pistas', 'El chat mezcla dos sabores', 'Ponle nombre a una receta', 'Defiende una combinación rara', 'Elige el snack del próximo stream'] },
-  { id: 'moda', label: 'el look del avatar', pollOptions: ['Outfit elegante', 'Pijama cozy', 'Estilo fantasía', 'Accesorio sorpresa'], wheelOptions: ['Diseña un accesorio para Katsy', 'Elige un color para Jatsi', 'Inventa un outfit de villana', 'Combina dos estilos al azar', 'Describe un look de gala', 'El chat elige el detalle final'] },
-  { id: 'backstage', label: 'los momentos detrás de cámaras', pollOptions: ['Preparativos del directo', 'Fails técnicos', 'Historias del modelo', 'Rutina antes del stream'], wheelOptions: ['Cuenta un fail inofensivo', 'Describe tu ritual pre-stream', 'Inventa un nombre para el backstage', 'Recrea una reacción del directo', 'El chat propone una pregunta', 'Comparte un detalle del setup'] },
-  { id: 'misterio', label: 'el misterio del portal', pollOptions: ['Pista escondida', 'Acertijo del chat', 'Objeto misterioso', 'Final detectivesco'], wheelOptions: ['Inventa una pista falsa divertida', 'Describe un objeto en clave', 'El chat elige al sospechoso ficticio', 'Resuelve una adivinanza', 'Crea una contraseña cósmica', 'Narra la revelación final'] },
-  { id: 'viajes', label: 'el viaje imaginario', pollOptions: ['Ciudad de fantasía', 'Isla tranquila', 'Museo extraño', 'Plan de carretera'], wheelOptions: ['Inventa un destino para el chat', 'Elige un souvenir absurdo', 'Describe un viaje en tres emojis', 'Ponle nombre a una nave', 'El chat escoge la parada', 'Cuenta una aventura ficticia'] }
+  { id: 'terror', label: 'la noche de terror', pollOptions: ['Terror psicológico', 'Casa embrujada', 'Criaturas extrañas', 'Historias del chat'] },
+  { id: 'cozy', label: 'el stream cozy', pollOptions: ['Juego de granjita', 'Decoramos juntas', 'Charla con cafecito', 'Aventura relajada'] },
+  { id: 'gaming', label: 'el próximo reto gaming', pollOptions: ['Una partida cooperativa', 'Modo difícil', 'Juego indie sorpresa', 'El chat decide el juego'] },
+  { id: 'anime', label: 'la noche de anime', pollOptions: ['Teorías locas', 'Tier list de personajes', 'Adivina el opening', 'Recomendaciones del chat'] },
+  { id: 'comunidad', label: 'el plan de la comunidad', pollOptions: ['Jugar con seguidores', 'Noche de clips', 'Preguntas y respuestas', 'Concurso de dibujos'] },
+  { id: 'lore', label: 'el lore de Jatsi y Katsy', pollOptions: ['Una historia de Jatsi', 'Un secreto de Katsy', 'Crossover inesperado', 'Que el chat escriba el final'] },
+  { id: 'clips', label: 'la noche de clips', pollOptions: ['Fails legendarios', 'Momentos tiernos', 'Reacciones inesperadas', 'Clips enviados por el chat'] },
+  { id: 'roleplay', label: 'la aventura de rol', pollOptions: ['Misterio detectivesco', 'Fantasía mágica', 'Comedia caótica', 'Ciencia ficción'] },
+  { id: 'vtuber', label: 'el especial VTuber', pollOptions: ['Preguntas del chat', 'Dibujo de avatar', 'Mímica de emociones', 'Historias del modelo'] },
+  { id: 'musica', label: 'la sesión musical', pollOptions: ['Adivina la canción', 'Opening de anime', 'Playlist del chat', 'Karaoke de broma'] },
+  { id: 'preguntas', label: 'la charla de preguntas', pollOptions: ['Preguntas divertidas', 'Historias vergonzosas', 'Metas de la comunidad', 'Confesiones ligeras'] },
+  { id: 'competencia', label: 'el torneo amistoso', pollOptions: ['Duelo Jatsi contra Katsy', 'Reto por equipos', 'Chat contra streamer', 'Mini campeonato sorpresa'] },
+  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'] },
+  { id: 'arte', label: 'el taller de arte del chat', pollOptions: ['Dibujar un avatar', 'Diseñar una criatura', 'Hacer fanart en directo', 'Crear un emote nuevo'] },
+  { id: 'speedrun', label: 'el speedrun amistoso', pollOptions: ['Récord contrarreloj', 'Ruta sin atajos', 'Reto con una mano', 'Carrera contra el chat'] },
+  { id: 'cocina', label: 'la charla de snacks', pollOptions: ['Dulce favorito', 'Snack de madrugada', 'Comida de comfort', 'Receta imposible'] },
+  { id: 'moda', label: 'el look del avatar', pollOptions: ['Outfit elegante', 'Pijama cozy', 'Estilo fantasía', 'Accesorio sorpresa'] },
+  { id: 'backstage', label: 'los momentos detrás de cámaras', pollOptions: ['Preparativos del directo', 'Fails técnicos', 'Historias del modelo', 'Rutina antes del stream'] },
+  { id: 'misterio', label: 'el misterio del portal', pollOptions: ['Pista escondida', 'Acertijo del chat', 'Objeto misterioso', 'Final detectivesco'] },
+  { id: 'viajes', label: 'el viaje imaginario', pollOptions: ['Ciudad de fantasía', 'Isla tranquila', 'Museo extraño', 'Plan de carretera'] }
 ];
 const pollFormats = [
   { id: 'plan', question: topic => `¿Qué hacemos en ${topic.label}?`, wheelTitle: topic => `Ruleta: ${topic.label}`, prefix: '', chismeTitle: topic => `Chismógrafo de confesiones · ${topic.label}`, chismeQuestions: topic => [`¿Qué gusto culposo tuyo combina con ${topic.label}?`, `¿Qué anécdota graciosa tuya recuerdas sobre ${topic.label}?`, `¿Qué opinión inofensiva defenderías sobre ${topic.label}?`] },
@@ -62,10 +62,36 @@ const pollAlternatives = [
   ['Modo detective', 'Modo improvisación', 'Modo equipo', 'Modo caos'],
   ['Final tierno', 'Final caótico', 'Final misterioso', 'Que decida el chat']
 ];
+const wheelChallenges = [
+  'Cuenta una anécdota vergonzosa, pero apta para todo público',
+  'Di un trabalenguas tres veces, cada vez más rápido',
+  'Narra tu siguiente jugada como final de telenovela',
+  'Haz una pose dramática de victoria durante cinco segundos',
+  'Inventa una excusa absurda para llegar tarde a una misión',
+  'Canta una frase inventada con voz de estrella de ópera',
+  'Intenta no reír mientras el chat te cuenta un chiste malo',
+  'Presenta un objeto cercano como si fuera un premio legendario',
+  'Describe tu snack favorito como crítica gastronómica elegante',
+  'Improvisa un discurso de agradecimiento por ganar una partida',
+  'Cuenta tu fail más inocente con lujo de suspenso',
+  'Haz una caminata de pasarela como si entraras a una final',
+  'Inventa un comercial de diez segundos para una papa',
+  'Explica una regla del juego usando solo tres palabras',
+  'Di tu frase más dramática mirando a cámara',
+  'Haz una celebración exagerada por una victoria imaginaria',
+  'Improvisa un trabalenguas con tres palabras que elija el chat',
+  'Describe tu día como si fuera el tráiler de una película',
+  'Haz una reverencia solemne a tu objeto más cercano',
+  'Inventa un nombre ridículo para tu próxima estrategia',
+  'Cuenta una mini historia de terror sobre perder la partida',
+  'Lee la siguiente frase como narradora de documental',
+  'Responde la siguiente pregunta con una rima improvisada',
+  'Haz una cara de sorpresa y mantenla durante cinco segundos'
+];
 const planCatalog = topics.flatMap((topic, topicIndex) => pollFormats.map((format, formatIndex) => ({
   id: `${topic.id}-${format.id}`,
   poll: { title: format.question(topic), options: formatIndex === 0 ? topic.pollOptions : pollAlternatives[formatIndex - 1] },
-  wheel: { title: format.wheelTitle(topic), options: topic.wheelOptions.map(option => `${format.prefix}${option}`) },
+  wheel: { title: format.wheelTitle(topic), options: Array.from({ length: 6 }, (_, index) => `${format.prefix}${wheelChallenges[(topicIndex * 5 + index) % wheelChallenges.length]}`) },
   chismografo: { title: format.chismeTitle(topic.label), questions: format.chismeQuestions(topic.label) }
 })));
 if (planCatalog.length !== 160) throw new Error(`El catálogo debe tener 160 combinaciones; tiene ${planCatalog.length}.`);
@@ -118,8 +144,8 @@ entries = [
   },
   {
     slug: `jatsi-semana-${safeWeek}-ruleta`, type: 'wheel', title: plan.wheel.title,
-    description: 'Gira la ruleta: el chat propone el destino y Jatsi o Katsy acepta el reto en directo.',
-    config: { options: plan.wheel.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+    description: 'Jatsi gira esta ruleta en directo. Los retos son generales, graciosos y siempre de buen rollo.',
+    config: { options: plan.wheel.options, host_only: true, campaign: 'weekly', plan_id: plan.id, week: weekKey }
   },
   {
     slug: `jatsi-semana-${safeWeek}-chismografo`, type: 'question', title: plan.chismografo.title,
@@ -131,6 +157,11 @@ const birthdayActivity = {
   slug: 'cumpleanos-del-portal', type: 'question', title: 'Cumpleaños del portal',
   description: 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.',
   config: { form_type: 'birthday' }, is_active: true
+};
+const baseWheel = {
+  slug: 'ruleta-cosmica', type: 'wheel', title: 'Ruleta del directo',
+  description: 'Jatsi gira la ruleta en directo y acepta un reto general, gracioso y de buen rollo.',
+  config: { options: wheelChallenges.slice(0, 6), host_only: true }, is_active: true
 };
 async function postDiscord() {
   const response = await fetch(process.env.COMMUNITY_WEBHOOK_URL, {
@@ -151,6 +182,11 @@ async function postDiscord() {
 
 const currentPrefix = `jatsi-semana-${safeWeek}-`;
 const oldCampaigns = await supabaseRequest('/rest/v1/activities?select=id,slug&slug=like.jatsi-semana-%&is_active=eq.true');
+const activeSurveys = await supabaseRequest('/rest/v1/activities?select=id,slug,type,config&type=in.(poll,question)&is_active=eq.true');
+await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
+  method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+  body: JSON.stringify([baseWheel])
+});
 await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
   method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
   body: JSON.stringify(entries.map(activity => ({ ...activity, is_active: true })))
@@ -159,10 +195,15 @@ await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
   method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
   body: JSON.stringify([birthdayActivity])
 });
+for (const activity of activeSurveys.filter(item => item.slug !== weekPollSlug && (item.type === 'poll' || (item.type === 'question' && Array.isArray(item.config?.options))))) {
+  await supabaseRequest(`/rest/v1/activities?id=eq.${activity.id}`, {
+    method: 'PATCH', body: JSON.stringify({ is_active: false })
+  });
+}
 for (const activity of oldCampaigns.filter(item => !item.slug.startsWith(currentPrefix))) {
   await supabaseRequest(`/rest/v1/activities?id=eq.${activity.id}`, {
     method: 'PATCH', body: JSON.stringify({ is_active: false })
   });
 }
 await postDiscord();
-console.log(`Semana ${weekKey}: encuesta, ruleta y chismógrafo activados; aviso publicado en Discord.`);
+console.log(`Semana ${weekKey}: encuesta única, ruleta para Jatsi y chismógrafo activados; aviso publicado en Discord.`);

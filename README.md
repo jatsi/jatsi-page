@@ -6,7 +6,7 @@ Experiencia web inmersiva para Jatsi, que presenta sus dos personalidades: Jatsi
 
 - Inicio inmersivo con profundidad, partículas reactivas y sonido ambiental opcional.
 - Diseño adaptable para computadora, tableta y móvil.
-- Ruleta cósmica, encuestas, buzón anónimo, Esto o aquello, Oráculo de Jatsi y preguntas para Q&A.
+- Ruleta del directo, encuestas, chismógrafo, cumpleaños, buzón anónimo, Esto o aquello, Oráculo de Jatsi y preguntas para Q&A.
 - Cada actividad genera un enlace directo que se puede pegar en Discord.
 - Modo demostración local para probar todas las pantallas sin configurar servicios.
 - Registro e inicio de sesión con correo.
@@ -90,9 +90,13 @@ Para un lanzamiento público conviene activar confirmación de correo, protecci�
 
 ## Rotación semanal y avisos
 
-El panel incluye una pestaña **Programación**. GitHub Actions activa cada lunes a las **6:00 a. m. de Ciudad de México** una encuesta, una ruleta y un chismógrafo del catálogo de 160 combinaciones. El historial evita repetir una combinación y se conserva en Supabase. La automatización también mantiene disponibles el **Chismógrafo del portal** y **Cumpleaños del portal**.
+El panel incluye una pestaña **Programación**. GitHub Actions activa cada lunes a las **6:00 a. m. de Ciudad de México** una encuesta, una ruleta y un chismógrafo del catálogo de 160 combinaciones. Deja una sola encuesta semanal activa y pausa las encuestas anteriores, sin borrar su historial. La ruleta semanal la gira Jatsi en directo; sus retos son generales, graciosos y aptos para todo público. La automatización también mantiene disponibles el **Chismógrafo del portal** y **Cumpleaños del portal**.
 
-El formulario de cumpleaños solo pide día, mes y un alias opcional; nunca solicita el año. Antes de guardar exige autorización para compartir alias y fecha en el servidor Discord. Una segunda automatización revisa la cola cada cinco minutos, omite registros duplicados por visitante y, después de publicarlos, borra el alias y la fecha de la fila de Supabase. Las respuestas del chismógrafo se guardan en la tabla privada de interacciones y solo las puede revisar administración. No se deben compartir rumores, secretos ni datos privados de otras personas.
+El formulario de cumpleaños solo pide día, mes y un alias opcional; nunca solicita el año. Antes de guardar exige autorización para compartir alias y fecha en el servidor Discord. Una segunda automatización revisa la cola cada cinco minutos, omite registros duplicados por visitante y, después de publicarlos, borra el alias y la fecha de la fila de Supabase.
+
+El chismógrafo tiene formato de cuaderno y mural público. Las respuestas quedan privadas hasta que administración las revise. Solo pueden aprobarse para publicación las que tengan autorización explícita; el mural siempre muestra las respuestas anónimamente. Administración puede retirarlas después. No se deben compartir rumores, secretos ni datos privados de otras personas.
+
+En una base de datos que ya existe, vuelve a ejecutar el archivo completo `supabase/schema.sql` desde Supabase → SQL Editor para instalar las reglas seguras de lectura pública y aprobación. El archivo usa políticas e inserciones idempotentes.
 
 Para activarlo una sola vez:
 
