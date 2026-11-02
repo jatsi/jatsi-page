@@ -191,8 +191,18 @@ async function postDiscord() {
 }
 
 const currentPrefix = `jatsi-semana-${safeWeek}-`;
-const oldCampaigns = await supabaseRequest('/rest/v1/activities?select=id,slug&slug=like.jatsi-semana-%&is_active=eq.true');
-const activeSurveys = await supabaseRequest('/rest/v1/activities?select=id,slug,type,config&type=in.(poll,question)&is_active=eq.true');
+const oldCampaignQuery = new URLSearchParams({
+  select: 'id,slug',
+  slug: 'like.jatsi-semana-%',
+  is_active: 'eq.true'
+});
+const oldCampaigns = await supabaseRequest(`/rest/v1/activities?${oldCampaignQuery}`);
+const activeSurveyQuery = new URLSearchParams({
+  select: 'id,slug,type,config',
+  type: 'in.(poll,question)',
+  is_active: 'eq.true'
+});
+const activeSurveys = await supabaseRequest(`/rest/v1/activities?${activeSurveyQuery}`);
 await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
   method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
   body: JSON.stringify([baseWheel])
