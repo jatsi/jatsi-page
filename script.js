@@ -857,20 +857,37 @@ function messagesPanel() {
 
 function chismografoPanel() {
   const chismes = state.interactions.filter(item => item.payload?.form_type === 'chismografo');
+  const respondentLabels = new Map();
+  let userNumber = 0;
+  let anonymousNumber = 0;
+  [...chismes].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).forEach(item => {
+    const anonymous = item.payload.anonymous === true || !String(item.payload.display_name || '').trim();
+    respondentLabels.set(item.id, anonymous ? 'Anónimo ' + (++anonymousNumber) : 'Usuario ' + (++userNumber) + ' · ' + String(item.payload.display_name).trim());
+  });
   const cards = chismes.map(item => {
     const canPublish = item.payload.allow_public === true;
     const published = item.payload.public_status === 'published';
     const stateLabel = published ? 'Publicado en el mural' : canPublish ? 'Privado · esperando revisión' : 'Privado · sin permiso de publicación';
-    const answerMarkup = (item.payload.answers || []).map(answer => '<div class="chisme-admin-answer"><small>' + escapeHTML(answer.question) + '</small><p>' + escapeHTML(answer.answer) + '</p></div>').join('');
+    const pageGroups = new Map();
+    (item.payload.answers || []).forEach(answer => {
+      const questionIndex = chismografoQuestions.findIndex(question => question.question === answer.question);
+      const pageIndex = questionIndex >= 0 ? Math.floor(questionIndex / 10) : 0;
+      const category = chismografoQuestions[pageIndex * 10]?.category || 'Otras respuestas';
+      if (!pageGroups.has(pageIndex)) pageGroups.set(pageIndex, { category, answers: [] });
+      pageGroups.get(pageIndex).answers.push(answer);
+    });
+    const pagesMarkup = [...pageGroups.entries()].sort(([a], [b]) => a - b).map(([pageIndex, page]) =>
+      '<details class="chisme-admin-page"' + (pageIndex === [...pageGroups.keys()].sort((a, b) => a - b)[0] ? ' open' : '') + '><summary><span>PÁGINA ' + String(pageIndex + 1).padStart(2, '0') + ' · ' + escapeHTML(page.category) + '</span><small>' + page.answers.length + ' respuestas <b>＋</b></small></summary><div class="chisme-admin-page-content">' + page.answers.map(answer => '<article class="chisme-admin-answer"><small>' + escapeHTML(answer.question) + '</small><p>' + escapeHTML(answer.answer) + '</p></article>').join('') + '</div></details>'
+    ).join('');
     const action = published
       ? '<button class="admin-table-action" type="button" data-hide-chisme="' + item.id + '"><i class="iconoir-eye-closed"></i>Desaprobar y ocultar</button>'
       : canPublish
         ? '<button class="admin-table-action" type="button" data-publish-chisme="' + item.id + '"><i class="iconoir-eye"></i>Aprobar y publicar</button>'
         : '<span class="chisme-private-lock"><i class="iconoir-lock"></i> No autorizó</span>';
     const profile = [item.payload.age ? 'Edad: ' + item.payload.age : '', item.payload.zodiac ? 'Signo: ' + item.payload.zodiac : ''].filter(Boolean).join(' · ');
-    return '<article class="chisme-admin-card"><div class="chisme-admin-top"><span>✎ RESPUESTA DE ' + escapeHTML(item.payload.display_name || 'ANÓNIM@') + (profile ? '<small class="chisme-private-lock">' + escapeHTML(profile) + '</small>' : '') + '</span><small>' + escapeHTML(stateLabel) + '</small></div>' + answerMarkup + '<div class="chisme-admin-foot"><small>' + escapeHTML(formatDate(item.created_at)) + '</small>' + action + '</div></article>';
+    return '<details class="chisme-admin-card chisme-admin-book"><summary><span class="chisme-book-cover"><i class="iconoir-book"></i><b>' + escapeHTML(respondentLabels.get(item.id)) + '</b>' + (profile ? '<small>' + escapeHTML(profile) + '</small>' : '') + '</span><span class="chisme-book-meta"><small>' + escapeHTML(stateLabel) + '</small><b>' + (item.payload.answers || []).length + ' / 50 <i class="iconoir-book"></i></b><i class="iconoir-plus"></i></span></summary><div class="chisme-admin-book-inside"><div class="chisme-admin-book-heading"><span>✎ CUADERNITO DE ' + escapeHTML(respondentLabels.get(item.id).toUpperCase()) + '</span><small>' + escapeHTML(formatDate(item.created_at)) + '</small></div>' + (pagesMarkup || '<p class="chisme-admin-note">No hay respuestas escritas en este cuaderno.</p>') + '<div class="chisme-admin-foot">' + action + '</div></div></details>';
   }).join('');
-  return '<section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTACIÓN DEL CHISMÓGRAFO</span><h3>Respuestas para revisar</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Aprueba las respuestas autorizadas para verlas en el cuadernito público. Puedes desaprobarlas cuando quieras. Los alias solo aparecen aquí, en tu panel.</p><p class="chisme-action-status" id="chisme-admin-status" role="status" hidden></p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section><section class="chisme-notebook chisme-dashboard-notebook"><span class="chisme-sticker chisme-sticker-jatsi" aria-hidden="true"><b>J</b><i>✦</i></span><span class="chisme-sticker chisme-sticker-katsy" aria-hidden="true"><b>K</b><i>♡</i></span><div class="chisme-notebook-heading"><div><span>VISTA PÚBLICA</span><h3>El cuadernito<br><em>que ve la comunidad.</em></h3></div><p>Así se verán las respuestas aprobadas. Siempre aparecen anónimas.</p></div><div class="chisme-public-wall" id="dashboard-chisme-wall" aria-live="polite"><div class="chisme-wall-empty"><span>✎</span><strong>Cargando el cuadernito…</strong></div></div><div class="chisme-notebook-footer"><span>VISTA PREVIA DEL MURAL</span><span>JATSI <b>×</b> KATSY</span></div></section>';
+  return '<section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTACIÓN DEL CHISMÓGRAFO</span><h3>Un cuadernito por persona</h3></div><span class="chisme-admin-count">' + chismes.length + ' cuadernitos</span></div><p class="chisme-admin-note">Abre cada cuaderno para pasar por sus páginas temáticas. Los nombres y los datos de perfil solo aparecen en este panel; el mural siempre es anónimo.</p><p class="chisme-action-status" id="chisme-admin-status" role="status" hidden></p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section><section class="chisme-notebook chisme-dashboard-notebook"><span class="chisme-sticker chisme-sticker-jatsi" aria-hidden="true"><b>J</b><i>✦</i></span><span class="chisme-sticker chisme-sticker-katsy" aria-hidden="true"><b>K</b><i>♡</i></span><div class="chisme-notebook-heading"><div><span>VISTA PÚBLICA</span><h3>El cuadernito<br><em>que ve la comunidad.</em></h3></div><p>Así se verán las respuestas aprobadas. Siempre aparecen anónimas.</p></div><div class="chisme-public-wall" id="dashboard-chisme-wall" aria-live="polite"><div class="chisme-wall-empty"><span>✎</span><strong>Cargando el cuadernito…</strong></div></div><div class="chisme-notebook-footer"><span>VISTA PREVIA DEL MURAL</span><span>JATSI <b>×</b> KATSY</span></div></section>';
 }
 
 async function setChismePublication(id, publish) {
