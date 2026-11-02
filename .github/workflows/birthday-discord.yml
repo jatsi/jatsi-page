@@ -1,6 +1,9 @@
 name: Cumpleaños en Discord
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # Discord recibe los cumpleaños pendientes como máximo unos minutos después.
     - cron: '*/5 * * * *'

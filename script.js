@@ -632,7 +632,7 @@ async function loadInteractions(all = false) {
 function dashboardNav() {
   const admin = state.profile?.role === 'admin';
   const items = admin
-    ? [['overview', 'iconoir-dashboard', 'Resumen'], ['messages', 'iconoir-chat-lines', 'Mensajes'], ['activities', 'iconoir-playlist-play', 'Actividades'], ['create', 'iconoir-plus', 'Crear actividad'], ['analytics', 'iconoir-stats-report', 'Analíticas'], ['schedule', 'iconoir-calendar', 'Programación']]
+    ? [['overview', 'iconoir-dashboard', 'Resumen'], ['messages', 'iconoir-chat-lines', 'Mensajes'], ['chismografo', 'iconoir-book', 'Chismógrafo'], ['activities', 'iconoir-playlist-play', 'Actividades'], ['create', 'iconoir-plus', 'Crear actividad'], ['analytics', 'iconoir-stats-report', 'Analíticas'], ['schedule', 'iconoir-calendar', 'Programación']]
     : [['overview', 'iconoir-dashboard', 'Mi inicio'], ['history', 'iconoir-clock', 'Mi historial']];
   $('#dashboard-nav').innerHTML = items.map(([id, icon, label]) => '<button type="button" data-dashboard-tab="' + id + '" class="' + (state.dashboardTab === id ? 'active' : '') + '"><i class="' + icon + '"></i>' + label + '</button>').join('');
   $$('[data-dashboard-tab]').forEach(button => button.addEventListener('click', () => {
@@ -659,8 +659,8 @@ function interactionLabel(item) {
   return 'Interacción registrada';
 }
 
-function renderPublicChisme(items) {
-  const wall = $('#chisme-public-wall');
+function renderPublicChisme(items, wallSelector = '#chisme-public-wall') {
+  const wall = $(wallSelector);
   if (!wall) return;
   const answers = items.flatMap(item => item.payload
     ? (item.payload.answers || []).map(entry => ({ question: entry.question, answer: entry.answer, created_at: item.created_at }))
@@ -672,21 +672,21 @@ function renderPublicChisme(items) {
   wall.innerHTML = answers.slice(0, 12).map((entry, index) => '<article class="chisme-answer-sheet" style="--sheet-tilt:' + (index % 2 ? '1.1' : '-1.2') + 'deg"><span class="chisme-sheet-sticker">' + (index % 2 ? '✦' : '♡') + '</span><small>ANÓNIM@ · ' + escapeHTML(new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' }).format(new Date(entry.created_at))) + '</small><h4>' + escapeHTML(entry.question) + '</h4><p>' + escapeHTML(entry.answer) + '</p><i>J ✿ K</i></article>').join('');
 }
 
-async function loadPublicChisme() {
-  const wall = $('#chisme-public-wall');
+async function loadPublicChisme(wallSelector = '#chisme-public-wall') {
+  const wall = $(wallSelector);
   if (!wall) return;
   if (state.supabase) {
     const { data, error } = await state.supabase.from('published_chismografo').select('question,answer,created_at')
       .order('created_at', { ascending: false }).limit(12);
     if (error) {
       console.warn('No se pudo cargar el mural del chismógrafo:', error);
-      renderPublicChisme([]);
+      renderPublicChisme([], wallSelector);
       return;
     }
-    renderPublicChisme(data || []);
+    renderPublicChisme(data || [], wallSelector);
     return;
   }
-  renderPublicChisme(localInteractions().filter(item => item.payload?.form_type === 'chismografo' && item.payload?.public_status === 'published'));
+  renderPublicChisme(localInteractions().filter(item => item.payload?.form_type === 'chismografo' && item.payload?.public_status === 'published'), wallSelector);
 }
 
 function historyHTML(items, emptyMessage = 'Todavía no hay estrellas por aquí.') {
@@ -737,6 +737,10 @@ function userOverview() {
 
 function messagesPanel() {
   const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind) && item.payload?.form_type !== 'chismografo');
+  return '<section class="panel"><h3>Mensajes recibidos</h3>' + historyHTML(messages, 'Aún no han llegado mensajes.') + '</section>';
+}
+
+function chismografoPanel() {
   const chismes = state.interactions.filter(item => item.payload?.form_type === 'chismografo');
   const cards = chismes.map(item => {
     const canPublish = item.payload.allow_public === true;
@@ -744,13 +748,13 @@ function messagesPanel() {
     const stateLabel = published ? 'Publicado en el mural' : canPublish ? 'Privado · esperando revisión' : 'Privado · sin permiso de publicación';
     const answerMarkup = (item.payload.answers || []).map(answer => '<div class="chisme-admin-answer"><small>' + escapeHTML(answer.question) + '</small><p>' + escapeHTML(answer.answer) + '</p></div>').join('');
     const action = published
-      ? '<button class="admin-table-action" type="button" data-hide-chisme="' + item.id + '"><i class="iconoir-eye-closed"></i>Ocultar del mural</button>'
+      ? '<button class="admin-table-action" type="button" data-hide-chisme="' + item.id + '"><i class="iconoir-eye-closed"></i>Desaprobar y ocultar</button>'
       : canPublish
-        ? '<button class="admin-table-action" type="button" data-publish-chisme="' + item.id + '"><i class="iconoir-eye"></i>Publicar anónimo</button>'
+        ? '<button class="admin-table-action" type="button" data-publish-chisme="' + item.id + '"><i class="iconoir-eye"></i>Aprobar y publicar</button>'
         : '<span class="chisme-private-lock"><i class="iconoir-lock"></i> No autorizó</span>';
     return '<article class="chisme-admin-card"><div class="chisme-admin-top"><span>✎ RESPUESTA DE ' + escapeHTML(item.payload.display_name || 'ANÓNIM@') + '</span><small>' + escapeHTML(stateLabel) + '</small></div>' + answerMarkup + '<div class="chisme-admin-foot"><small>' + escapeHTML(formatDate(item.created_at)) + '</small>' + action + '</div></article>';
   }).join('');
-  return '<section class="panel"><h3>Mensajes recibidos</h3>' + historyHTML(messages, 'Aún no han llegado mensajes.') + '</section><section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">CUADERNITO DE LA COMUNIDAD</span><h3>Revisa antes de compartir</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Solo puedes publicar las respuestas con autorización. El mural público siempre oculta los alias; puedes retirarlas cuando quieras.</p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section>';
+  return '<section class="panel chisme-admin-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTACIÓN DEL CHISMÓGRAFO</span><h3>Respuestas para revisar</h3></div><span class="chisme-admin-count">' + chismes.length + ' respuestas</span></div><p class="chisme-admin-note">Aprueba las respuestas autorizadas para verlas en el cuadernito público. Puedes desaprobarlas cuando quieras. Los alias solo aparecen aquí, en tu panel.</p>' + (cards || '<div class="empty-state">Todavía no hay respuestas del chismógrafo.</div>') + '</section><section class="chisme-notebook chisme-dashboard-notebook"><span class="chisme-sticker chisme-sticker-jatsi" aria-hidden="true"><b>J</b><i>✦</i></span><span class="chisme-sticker chisme-sticker-katsy" aria-hidden="true"><b>K</b><i>♡</i></span><div class="chisme-notebook-heading"><div><span>VISTA PÚBLICA</span><h3>El cuadernito<br><em>que ve la comunidad.</em></h3></div><p>Así se verán las respuestas aprobadas. Siempre aparecen anónimas.</p></div><div class="chisme-public-wall" id="dashboard-chisme-wall" aria-live="polite"><div class="chisme-wall-empty"><span>✎</span><strong>Cargando el cuadernito…</strong></div></div><div class="chisme-notebook-footer"><span>VISTA PREVIA DEL MURAL</span><span>JATSI <b>×</b> KATSY</span></div></section>';
 }
 
 async function setChismePublication(id, publish) {
@@ -881,17 +885,18 @@ function programmingPanel() {
 
 async function renderDashboard() {
   const admin = state.profile?.role === 'admin';
-  if (!admin && ['messages', 'activities', 'create', 'analytics', 'schedule'].includes(state.dashboardTab)) state.dashboardTab = 'overview';
+  if (!admin && ['messages', 'chismografo', 'activities', 'create', 'analytics', 'schedule'].includes(state.dashboardTab)) state.dashboardTab = 'overview';
   dashboardNav();
   $('#dashboard-avatar').textContent = (state.profile?.display_name || '✦').charAt(0).toUpperCase();
   $('#dashboard-name').textContent = state.profile?.display_name || 'Explorador';
   $('#dashboard-role').textContent = admin ? 'Administradora' : 'Explorador';
   $('#dashboard-eyebrow').textContent = admin ? 'CENTRO DE COMANDO' : 'MI CONSTELACIÓN';
-  const titles = { overview: admin ? 'El universo, de un vistazo.' : 'Bienvenid@ de vuelta.', messages: 'Mensajes del cosmos.', activities: 'Portales publicados.', create: 'Abre un nuevo portal.', analytics: 'Pulso de la comunidad.', schedule: 'Siempre hay algo nuevo.', history: 'Tu historia en el universo.' };
+  const titles = { overview: admin ? 'El universo, de un vistazo.' : 'Bienvenid@ de vuelta.', messages: 'Mensajes del cosmos.', chismografo: 'El cuadernito de la comunidad.', activities: 'Portales publicados.', create: 'Abre un nuevo portal.', analytics: 'Pulso de la comunidad.', schedule: 'Siempre hay algo nuevo.', history: 'Tu historia en el universo.' };
   $('#dashboard-heading').textContent = titles[state.dashboardTab];
   const views = {
     overview: admin ? adminOverview() : userOverview(),
     messages: messagesPanel(),
+    chismografo: chismografoPanel(),
     activities: activitiesPanel(),
     create: createPanel(),
     analytics: analyticsPanel(),
@@ -902,6 +907,7 @@ async function renderDashboard() {
     ? '<div class="database-notice" role="status"><i class="iconoir-warning-triangle"></i><span><strong>La base de datos no está conectada.</strong> Los mensajes y actividades de prueba se guardan solo en este navegador; no recibimos ni mostramos los mensajes de otras personas. Configura Supabase en <code>config.js</code> y aplica <code>supabase/schema.sql</code>.</span></div>'
     : (state.dataError ? '<div class="database-notice" role="alert"><i class="iconoir-warning-triangle"></i><span><strong>Problema al consultar Supabase.</strong> ' + escapeHTML(state.dataError) + '</span></div>' : '');
   $('#dashboard-content').innerHTML = localNotice + (views[state.dashboardTab] || views.overview);
+  if (admin && state.dashboardTab === 'chismografo') loadPublicChisme('#dashboard-chisme-wall');
   $$('[data-dashboard-tab]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
     state.dashboardTab = button.dataset.dashboardTab;
     renderDashboard();
