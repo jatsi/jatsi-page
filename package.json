@@ -1,0 +1,21 @@
+{
+  "name": "jatsi-page",
+  "version": "1.0.0",
+  "description": "Experiencia web inmersiva para Jatsi, que presenta sus dos personalidades: Jatsi y Katsy. Preparada para GitHub Pages, incluye animaciones reactivas, nuevas ilustraciones, actividades compartibles, cuentas de usuario, panel administrativo y analíticas.",
+  "main": "config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jatsi/jatsi-page.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/jatsi/jatsi-page/issues"
+  },
+  "homepage": "https://github.com/jatsi/jatsi-page#readme",
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}

@@ -82,6 +82,7 @@ const state = {
   dataError: '',
   authMode: 'login',
   dashboardTab: 'overview',
+  analyticsRange: '30d',
   editingActivitySlug: '',
   realtimeChannel: null
 };
@@ -101,11 +102,17 @@ function localInteractions() {
 }
 
 function localActivities() {
-  return safeJSON(localStorage.getItem(localActivitiesKey), []);
+  const saved = safeJSON(localStorage.getItem(localActivitiesKey), []);
+  const bySlug = new Map(saved.map(item => [item.slug, item]));
+  return [...seedActivities.map(item => bySlug.get(item.slug) || item), ...saved.filter(item => !seedActivities.some(seed => seed.slug === item.slug))];
 }
 
 function saveLocalActivities(activities) {
-  localStorage.setItem(localActivitiesKey, JSON.stringify(activities.filter(item => !seedActivities.some(seed => seed.slug === item.slug))));
+  const changed = activities.filter(item => {
+    const seed = seedActivities.find(original => original.slug === item.slug);
+    return !seed || JSON.stringify(seed) !== JSON.stringify(item);
+  });
+  localStorage.setItem(localActivitiesKey, JSON.stringify(changed));
 }
 
 function saveLocalInteraction(interaction) {
@@ -494,7 +501,7 @@ async function loadProfile() {
 
 async function loadActivities() {
   if (!state.supabase) {
-    state.adminActivities = [...seedActivities, ...localActivities()];
+    state.adminActivities = localActivities();
     state.activities = state.adminActivities.filter(item => item.is_active !== false);
     renderActivityCards();
     return;
@@ -545,7 +552,7 @@ async function loadInteractions(all = false) {
 function dashboardNav() {
   const admin = state.profile?.role === 'admin';
   const items = admin
-    ? [['overview', 'iconoir-dashboard', 'Resumen'], ['messages', 'iconoir-chat-lines', 'Mensajes'], ['activities', 'iconoir-playlist-play', 'Actividades'], ['create', 'iconoir-plus', 'Crear actividad'], ['analytics', 'iconoir-stats-report', 'Analíticas']]
+    ? [['overview', 'iconoir-dashboard', 'Resumen'], ['messages', 'iconoir-chat-lines', 'Mensajes'], ['activities', 'iconoir-playlist-play', 'Actividades'], ['create', 'iconoir-plus', 'Crear actividad'], ['analytics', 'iconoir-stats-report', 'Analíticas'], ['schedule', 'iconoir-calendar', 'Programación']]
     : [['overview', 'iconoir-dashboard', 'Mi inicio'], ['history', 'iconoir-clock', 'Mi historial']];
   $('#dashboard-nav').innerHTML = items.map(([id, icon, label]) => '<button type="button" data-dashboard-tab="' + id + '" class="' + (state.dashboardTab === id ? 'active' : '') + '"><i class="' + icon + '"></i>' + label + '</button>').join('');
   $$('[data-dashboard-tab]').forEach(button => button.addEventListener('click', () => {
@@ -584,8 +591,29 @@ function metricCard(icon, label, value, detail) {
 function adminOverview() {
   const messages = state.interactions.filter(item => ['message', 'question'].includes(item.kind));
   const votes = state.interactions.filter(item => ['poll', 'either'].includes(item.kind));
+  const spins = state.interactions.filter(item => item.kind === 'wheel');
+  const community = new Set(state.interactions.map(item => item.user_id || item.visitor_id).filter(Boolean)).size;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const trendDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today); date.setDate(today.getDate() - 6 + index);
+    const key = date.toLocaleDateString('en-CA');
+    return { date, key, count: state.interactions.filter(item => new Date(item.created_at).toLocaleDateString('en-CA') === key).length };
+  });
+  const trendMax = Math.max(1, ...trendDays.map(day => day.count));
+  const pulseActivities = state.activities.filter(activity => ['poll', 'either', 'wheel'].includes(activity.type)).map(activity => {
+    const rows = state.interactions.filter(item => item.activity_id === activity.id);
+    const tallies = new Map();
+    rows.forEach(item => {
+      const label = item.payload?.option || item.payload?.result;
+      if (label) tallies.set(label, (tallies.get(label) || 0) + 1);
+    });
+    const top = [...tallies.entries()].sort((a, b) => b[1] - a[1])[0];
+    return { count: rows.length, html: '<div class="pulse-activity-row"><span class="pulse-activity-icon">' + typeIcon(activity.type) + '</span><div><strong>' + escapeHTML(activity.title) + '</strong><small>' + rows.length + ' ' + (activity.type === 'wheel' ? 'giros' : 'votos') + (top ? ' · más elegido: ' + escapeHTML(top[0]) : ' · esperando participación') + '</small></div><b>' + rows.length + '</b></div>' };
+  }).sort((a, b) => b.count - a.count).slice(0, 4).map(item => item.html).join('');
   const databaseLabel = !configured ? 'No conectada · datos locales' : (state.dataError || 'Conectada');
-  return '<div class="metric-grid">' + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Datos disponibles') + metricCard('iconoir-chat-lines', 'MENSAJES', messages.length, messages.filter(item => Date.now() - new Date(item.created_at) < 86400000).length + ' hoy') + metricCard('iconoir-stats-up-square', 'VOTOS', votes.length, 'Encuestas activas') + metricCard('iconoir-playlist-play', 'ACTIVIDADES', state.activities.length, 'Publicadas') + '</div><div class="dashboard-grid"><section class="panel"><h3>Actividad reciente</h3>' + historyHTML(state.interactions.slice(0, 8)) + '</section><section class="panel"><h3>Estado del universo</h3><div class="history-item"><span><i class="iconoir-database-check"></i></span><div><strong>Base de datos</strong><small>' + escapeHTML(databaseLabel) + '</small></div><small class="status-pill ' + (configured && !state.dataError ? '' : 'status-local') + '">' + (configured && !state.dataError ? 'Conectada' : 'Pendiente') + '</small></div><div class="history-item"><span><i class="iconoir-link"></i></span><div><strong>Enlaces</strong><small>Listos para Discord</small></div><small class="status-pill">OK</small></div></section></div>';
+  const weekMessages = messages.filter(item => Date.now() - new Date(item.created_at) < 7 * 86400000).length;
+  const dayLabels = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+  return '<section class="admin-welcome"><div><span><i class="iconoir-sparks"></i> CENTRO DE CONTROL · JATSI × KATSY</span><h3>La comunidad, en un vistazo.</h3><p>Un resumen de lo que está pasando en tus actividades.</p></div><div class="admin-welcome-actions"><button type="button" data-dashboard-tab="analytics"><i class="iconoir-stats-report"></i> Ver estadísticas</button><button type="button" data-dashboard-tab="create"><i class="iconoir-plus"></i> Nueva actividad</button></div></section><div class="metric-grid admin-metric-grid">' + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Todos los registros') + metricCard('iconoir-group', 'COMUNIDAD', community, 'Participantes únicos') + metricCard('iconoir-chat-lines', 'MENSAJES', messages.length, weekMessages + ' esta semana') + metricCard('iconoir-stats-up-square', 'VOTOS + GIROS', votes.length + spins.length, votes.length + ' votos · ' + spins.length + ' giros') + '</div><div class="admin-overview-grid"><section class="panel admin-trend-panel"><div class="panel-heading-row"><div><span class="panel-overline">ÚLTIMOS 7 DÍAS</span><h3>Ritmo de la comunidad</h3></div><span class="trend-total">' + trendDays.reduce((sum, day) => sum + day.count, 0) + ' <small>interacciones</small></span></div><div class="admin-week-chart" role="img" aria-label="Interacciones diarias durante los últimos siete días">' + trendDays.map(day => '<div class="admin-week-day" title="' + day.count + ' interacciones"><span>' + day.count + '</span><i style="--bar-height:' + (day.count ? Math.max(5, day.count / trendMax * 100) : 2) + '%"></i><small>' + dayLabels[day.date.getDay()] + '</small></div>').join('') + '</div></section><section class="panel admin-health-panel"><div class="panel-heading-row"><div><span class="panel-overline">ESTADO DEL SITIO</span><h3>Todo en órbita</h3></div><i class="iconoir-shield-check admin-health-icon"></i></div><div class="health-row"><span><i class="iconoir-database-check"></i> Base de datos</span><b class="' + (configured && !state.dataError ? 'is-healthy' : 'is-pending') + '"><i></i>' + (configured && !state.dataError ? 'Conectada' : 'Revisar') + '</b></div><div class="health-row"><span><i class="iconoir-playlist-play"></i> Actividades activas</span><b>' + state.activities.length + '</b></div><div class="health-row"><span><i class="iconoir-chat-lines"></i> Mensajes esta semana</span><b>' + weekMessages + '</b></div></section></div><section class="panel admin-pulse-panel"><div class="panel-heading-row"><div><span class="panel-overline">VOTOS, RETOS Y PARTICIPACIÓN</span><h3>Lo que mueve a la comunidad</h3></div><button class="text-button-inline" type="button" data-dashboard-tab="analytics">Ver desglose <i class="iconoir-arrow-up-right"></i></button></div><div class="pulse-activity-list">' + (pulseActivities || '<div class="analytics-empty">Publica una encuesta o una ruleta para empezar a ver resultados.</div>') + '</div></section><div class="dashboard-grid admin-lower-grid"><section class="panel"><div class="panel-heading-row"><div><span class="panel-overline">SEÑALES RECIENTES</span><h3>Actividad reciente</h3></div><button class="text-button-inline" type="button" data-dashboard-tab="messages">Ver mensajes <i class="iconoir-arrow-up-right"></i></button></div>' + historyHTML(state.interactions.slice(0, 6)) + '</section><section class="panel admin-action-panel"><span class="panel-overline">SIGUIENTE PASO</span><h3>Mantén vivo el portal</h3><p>Prueba una pregunta nueva, rota la encuesta semanal o abre una dinámica para el próximo stream.</p><button class="button button-primary" type="button" data-dashboard-tab="create">Crear actividad <i class="iconoir-arrow-up-right"></i></button></section></div>';
 }
 
 function userOverview() {
@@ -600,7 +628,29 @@ function messagesPanel() {
 }
 
 function activitiesPanel() {
-  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.adminActivities.map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (item.type === 'wheel' ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar opciones</button>' : '') + '<button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
+  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.adminActivities.map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (['wheel', 'poll', 'either'].includes(item.type) ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar</button>' : '') + '<button class="admin-table-action" type="button" data-toggle-activity="' + item.slug + '" aria-label="' + (item.is_active ? 'Pausar ' : 'Activar ') + escapeHTML(item.title) + '"><i class="iconoir-' + (item.is_active ? 'pause' : 'play') + '"></i>' + (item.is_active ? 'Pausar' : 'Activar') + '</button><button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
+}
+
+async function toggleActivity(slug) {
+  const activity = state.adminActivities.find(item => item.slug === slug);
+  if (!activity) return;
+  const updated = { ...activity, is_active: !activity.is_active };
+  try {
+    if (state.supabase) {
+      const { data, error } = await state.supabase.from('activities').update({ is_active: updated.is_active }).eq('id', activity.id).select().single();
+      if (error) throw error;
+      Object.assign(updated, data);
+    }
+    state.adminActivities = state.adminActivities.map(item => item.id === activity.id ? updated : item);
+    state.activities = state.adminActivities.filter(item => item.is_active);
+    if (!state.supabase) saveLocalActivities(state.adminActivities);
+    renderActivityCards();
+    renderDashboard();
+    toast(updated.is_active ? 'Actividad activada.' : 'Actividad pausada.');
+  } catch (error) {
+    console.error('No se pudo cambiar el estado de la actividad:', error);
+    toast('No pudimos cambiar el estado. Revisa tu conexión e inténtalo otra vez.');
+  }
 }
 
 function createPanel() {
@@ -608,13 +658,16 @@ function createPanel() {
   const options = activity?.config?.options || [];
   const selectedType = activity?.type || 'poll';
   const optionsMarkup = '<div class="wheel-admin-guidance" id="wheel-admin-guidance" ' + (selectedType === 'wheel' ? '' : 'hidden') + '><small class="field-hint">Cada renglón ocupa el color que ves aquí:</small><div class="admin-wheel-preview" id="admin-wheel-preview"></div></div>';
-  return '<section class="panel create-panel"><div class="create-panel-intro"><span id="activity-type-preview"><i class="' + activityIconClass(selectedType) + '"></i></span><div><small>' + (activity ? 'AJUSTES DE ACTIVIDAD' : 'COMPOSITOR DE EXPERIENCIAS') + '</small><h3>' + (activity ? 'Editar ruleta' : 'Nueva actividad') + '</h3><p>' + (activity ? 'Actualiza las acciones, el título o la descripción de esta ruleta.' : 'Crea una experiencia y recibe un enlace listo para compartir en Discord.') + '</p></div></div><form class="admin-create" id="admin-create-form"><input type="hidden" name="editing_slug" value="' + (activity?.slug || '') + '"><div class="admin-form-grid"><label><span><i class="iconoir-list-select"></i>Tipo de actividad</span><select id="activity-type-select" name="type" ' + (activity ? 'disabled' : '') + '><option value="poll" ' + (selectedType === 'poll' ? 'selected' : '') + '>Encuesta</option><option value="wheel" ' + (selectedType === 'wheel' ? 'selected' : '') + '>Ruleta</option><option value="message" ' + (selectedType === 'message' ? 'selected' : '') + '>Buzón de mensajes</option><option value="question" ' + (selectedType === 'question' ? 'selected' : '') + '>Caja de preguntas</option><option value="either" ' + (selectedType === 'either' ? 'selected' : '') + '>Esto o aquello</option><option value="oracle" ' + (selectedType === 'oracle' ? 'selected' : '') + '>Oráculo</option></select>' + (activity ? '<input type="hidden" name="type" value="wheel">' : '') + '</label><label><span><i class="iconoir-edit"></i>Título</span><input name="title" required placeholder="Ej. ¿Qué jugamos el viernes?" value="' + escapeHTML(activity?.title || '') + '"></label></div><label><span><i class="iconoir-message-text"></i>Descripción</span><textarea name="description" placeholder="Cuéntale a la comunidad qué debe hacer">' + escapeHTML(activity?.description || '') + '</textarea></label><label class="options-label"><span><i class="iconoir-list"></i>Opciones <small>(una por línea)</small></span><textarea name="options" placeholder="Una acción por renglón; hasta 12 opciones">' + escapeHTML(options.join('\n')) + '</textarea>' + optionsMarkup + '</label><button class="button button-primary" type="submit"><i class="iconoir-sparks"></i> ' + (activity ? 'Guardar cambios' : 'Publicar actividad') + '</button><p class="form-status" role="status"></p></form></section>';
+  return '<section class="panel create-panel"><div class="create-panel-intro"><span id="activity-type-preview"><i class="' + activityIconClass(selectedType) + '"></i></span><div><small>' + (activity ? 'AJUSTES DE ACTIVIDAD' : 'COMPOSITOR DE EXPERIENCIAS') + '</small><h3>' + (activity ? 'Editar actividad' : 'Nueva actividad') + '</h3><p>' + (activity ? 'Actualiza las opciones, el título o la descripción.' : 'Crea una experiencia y recibe un enlace listo para compartir en Discord.') + '</p></div></div><form class="admin-create" id="admin-create-form"><input type="hidden" name="editing_slug" value="' + (activity?.slug || '') + '"><div class="admin-form-grid"><label><span><i class="iconoir-list-select"></i>Tipo de actividad</span><select id="activity-type-select" name="type" ' + (activity ? 'disabled' : '') + '><option value="poll" ' + (selectedType === 'poll' ? 'selected' : '') + '>Encuesta</option><option value="wheel" ' + (selectedType === 'wheel' ? 'selected' : '') + '>Ruleta</option><option value="message" ' + (selectedType === 'message' ? 'selected' : '') + '>Buzón de mensajes</option><option value="question" ' + (selectedType === 'question' ? 'selected' : '') + '>Caja de preguntas</option><option value="either" ' + (selectedType === 'either' ? 'selected' : '') + '>Esto o aquello</option><option value="oracle" ' + (selectedType === 'oracle' ? 'selected' : '') + '>Oráculo</option></select>' + (activity ? '<input type="hidden" name="type" value="' + escapeHTML(selectedType) + '">' : '') + '</label><label><span><i class="iconoir-edit"></i>Título</span><input name="title" required placeholder="Ej. ¿Qué jugamos el viernes?" value="' + escapeHTML(activity?.title || '') + '"></label></div><label><span><i class="iconoir-message-text"></i>Descripción</span><textarea name="description" placeholder="Cuéntale a la comunidad qué debe hacer">' + escapeHTML(activity?.description || '') + '</textarea></label><label class="options-label"><span><i class="iconoir-list"></i>Opciones <small>(una por línea)</small></span><textarea name="options" placeholder="Una acción por renglón; hasta 12 opciones">' + escapeHTML(options.join('\n')) + '</textarea>' + optionsMarkup + '</label><button class="button button-primary" type="submit"><i class="iconoir-sparks"></i> ' + (activity ? 'Guardar cambios' : 'Publicar actividad') + '</button><p class="form-status" role="status"></p></form></section>';
 }
 
 function analyticsPanel() {
-  const byKind = ['message', 'question', 'poll', 'either', 'wheel', 'oracle'].map(kind => ({ kind, count: state.interactions.filter(item => item.kind === kind).length }));
-  const votes = state.interactions.filter(item => ['poll', 'either'].includes(item.kind));
-  const spins = state.interactions.filter(item => item.kind === 'wheel');
+  const rangeDays = state.analyticsRange === '7d' ? 7 : state.analyticsRange === '30d' ? 30 : null;
+  const cutoff = rangeDays ? Date.now() - rangeDays * 86400000 : 0;
+  const reportInteractions = state.interactions.filter(item => !cutoff || new Date(item.created_at).getTime() >= cutoff);
+  const byKind = ['message', 'question', 'poll', 'either', 'wheel', 'oracle'].map(kind => ({ kind, count: reportInteractions.filter(item => item.kind === kind).length }));
+  const votes = reportInteractions.filter(item => ['poll', 'either'].includes(item.kind));
+  const spins = reportInteractions.filter(item => item.kind === 'wheel');
   const countsFor = (activity, items) => {
     const options = activity.config?.options || [];
     const rows = options.map((label, index) => ({ label, count: 0, index }));
@@ -657,18 +710,29 @@ function analyticsPanel() {
   }).join('');
   const totalPolls = pollActivities.reduce((sum, activity) => sum + votes.filter(item => item.activity_id === activity.id).length, 0);
   const totalSpins = wheelActivities.reduce((sum, activity) => sum + spins.filter(item => item.activity_id === activity.id).length, 0);
-  return '<div class="metric-grid analytics-summary">' + metricCard('iconoir-stats-up-square', 'VOTOS RECIBIDOS', totalPolls, pollActivities.length + ' encuestas') + metricCard('iconoir-refresh-double', 'GIROS DE RULETA', totalSpins, wheelActivities.length + ' ruletas') + metricCard('iconoir-chat-lines', 'MENSAJES', byKind.filter(item => ['message', 'question'].includes(item.kind)).reduce((sum, item) => sum + item.count, 0), 'Buzón y preguntas') + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Registros completos') + '</div><section class="analytics-section"><div class="analytics-section-heading"><span>01 / LA COMUNIDAD DECIDE</span><h3>Votos por encuesta</h3><p>Reparto y porcentaje de cada opción, con la favorita resaltada.</p></div><div class="analytics-card-grid">' + (pollPanels || '<div class="analytics-empty">Todavía no hay encuestas publicadas.</div>') + '</div></section><section class="analytics-section"><div class="analytics-section-heading"><span>02 / EL AZAR DEL COSMOS</span><h3>Resultados de las ruletas</h3><p>Cuántas veces salió cada resultado y cuál aparece más.</p></div><div class="analytics-card-grid">' + (wheelPanels || '<div class="analytics-empty">Todavía no hay ruletas publicadas.</div>') + '</div></section><section class="panel analytics-activity"><h3>Actividad por tipo</h3><div class="analytics-kind-list">' + byKind.map(item => '<div><span>' + escapeHTML(item.kind === 'either' ? 'Esto o aquello' : item.kind === 'wheel' ? 'Ruletas' : item.kind === 'poll' ? 'Encuestas' : item.kind === 'message' ? 'Buzón' : item.kind === 'question' ? 'Preguntas' : 'Oráculo') + '</span><strong>' + item.count + '</strong><i><b style="width:' + Math.round(item.count / Math.max(1, state.interactions.length) * 100) + '%"></b></i></div>').join('') + '</div></section>';
+  const rangeButtons = [['7d', '7 días'], ['30d', '30 días'], ['all', 'Todo el tiempo']].map(([value, label]) => '<button type="button" data-analytics-range="' + value + '" class="' + (state.analyticsRange === value ? 'active' : '') + '">' + label + '</button>').join('');
+  const participants = new Set(reportInteractions.map(item => item.user_id || item.visitor_id).filter(Boolean)).size;
+  return '<div class="analytics-toolbar"><div><span class="panel-overline">REPORTE DE LA COMUNIDAD</span><p>Compara votos, retos, mensajes y participación única.</p></div><div class="analytics-range" role="group" aria-label="Periodo del reporte">' + rangeButtons + '</div></div><div class="metric-grid analytics-summary">' + metricCard('iconoir-stats-up-square', 'VOTOS RECIBIDOS', totalPolls, pollActivities.length + ' encuestas') + metricCard('iconoir-refresh-double', 'GIROS DE RULETA', totalSpins, wheelActivities.length + ' ruletas') + metricCard('iconoir-group', 'PARTICIPANTES', participants, 'Cuentas y visitantes') + metricCard('iconoir-graph-up', 'INTERACCIONES', reportInteractions.length, state.analyticsRange === 'all' ? 'Desde el inicio' : 'En este periodo') + '</div><section class="analytics-section"><div class="analytics-section-heading"><span>01 / LA COMUNIDAD DECIDE</span><h3>Votos por encuesta</h3><p>Reparto y porcentaje de cada opción, con la favorita resaltada.</p></div><div class="analytics-card-grid">' + (pollPanels || '<div class="analytics-empty">Todavía no hay encuestas publicadas.</div>') + '</div></section><section class="analytics-section"><div class="analytics-section-heading"><span>02 / EL AZAR DEL COSMOS</span><h3>Resultados de las ruletas</h3><p>Cuántas veces salió cada resultado y cuál aparece más.</p></div><div class="analytics-card-grid">' + (wheelPanels || '<div class="analytics-empty">Todavía no hay ruletas publicadas.</div>') + '</div></section><section class="panel analytics-activity"><h3>Actividad por tipo</h3><div class="analytics-kind-list">' + byKind.map(item => '<div><span>' + escapeHTML(item.kind === 'either' ? 'Esto o aquello' : item.kind === 'wheel' ? 'Ruletas' : item.kind === 'poll' ? 'Encuestas' : item.kind === 'message' ? 'Buzón' : item.kind === 'question' ? 'Preguntas' : 'Oráculo') + '</span><strong>' + item.count + '</strong><i><b style="width:' + Math.round(item.count / Math.max(1, reportInteractions.length) * 100) + '%"></b></i></div>').join('') + '</div></section>';
+}
+
+function programmingPanel() {
+  const nextMonday = new Date();
+  nextMonday.setHours(0, 0, 0, 0);
+  const daysUntilMonday = (8 - nextMonday.getDay()) % 7 || 7;
+  nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
+  const nextLabel = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(nextMonday);
+  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>La página se renueva con una encuesta y una dinámica nuevas para que siempre haya algo que votar, girar y compartir.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Encuesta nueva</h4><p>La comunidad elige el juego, el plan o el mood del siguiente directo.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>JUEGA</small><h4>Dinámica nueva</h4><p>La ruleta estrena retos. Los resultados se quedan para tus estadísticas.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>COMPARTE</small><h4>Aviso a la comunidad</h4><p>Discord recibe un anuncio e Instagram publica una historia vertical.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">ACTIVACIÓN AUTOMÁTICA</span><h3>Conecta los canales una sola vez</h3><p>La programación ya está preparada en GitHub. Para que publique y rote contenido, agrega estos secretos en <strong>Settings → Secrets and variables → Actions</strong> del repositorio. Nunca escribas las claves aquí ni en <code>config.js</code>.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> DISCORD_WEBHOOK_URL</span><span><i class="iconoir-instagram"></i> INSTAGRAM_USER_ID</span><span><i class="iconoir-lock"></i> INSTAGRAM_ACCESS_TOKEN</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>La historia automática necesita una cuenta profesional de Instagram Business con permiso de publicación. La primera ejecución crea un espacio público en Supabase Storage para alojar la imagen semanal. Las actividades manuales que publiques no se pausan.</span></div></section>';
 }
 
 async function renderDashboard() {
   const admin = state.profile?.role === 'admin';
-  if (!admin && ['messages', 'activities', 'create', 'analytics'].includes(state.dashboardTab)) state.dashboardTab = 'overview';
+  if (!admin && ['messages', 'activities', 'create', 'analytics', 'schedule'].includes(state.dashboardTab)) state.dashboardTab = 'overview';
   dashboardNav();
   $('#dashboard-avatar').textContent = (state.profile?.display_name || '✦').charAt(0).toUpperCase();
   $('#dashboard-name').textContent = state.profile?.display_name || 'Explorador';
   $('#dashboard-role').textContent = admin ? 'Administradora' : 'Explorador';
   $('#dashboard-eyebrow').textContent = admin ? 'CENTRO DE COMANDO' : 'MI CONSTELACIÓN';
-  const titles = { overview: admin ? 'El universo, de un vistazo.' : 'Bienvenid@ de vuelta.', messages: 'Mensajes del cosmos.', activities: 'Portales publicados.', create: 'Abre un nuevo portal.', analytics: 'Pulso de la comunidad.', history: 'Tu historia en el universo.' };
+  const titles = { overview: admin ? 'El universo, de un vistazo.' : 'Bienvenid@ de vuelta.', messages: 'Mensajes del cosmos.', activities: 'Portales publicados.', create: 'Abre un nuevo portal.', analytics: 'Pulso de la comunidad.', schedule: 'Siempre hay algo nuevo.', history: 'Tu historia en el universo.' };
   $('#dashboard-heading').textContent = titles[state.dashboardTab];
   const views = {
     overview: admin ? adminOverview() : userOverview(),
@@ -676,17 +740,27 @@ async function renderDashboard() {
     activities: activitiesPanel(),
     create: createPanel(),
     analytics: analyticsPanel(),
+    schedule: programmingPanel(),
     history: '<section class="panel"><h3>Todo tu historial</h3>' + historyHTML(state.interactions, 'Aún no has enviado nada.') + '</section>'
   };
   const localNotice = !configured
     ? '<div class="database-notice" role="status"><i class="iconoir-warning-triangle"></i><span><strong>La base de datos no está conectada.</strong> Los mensajes y actividades de prueba se guardan solo en este navegador; no recibimos ni mostramos los mensajes de otras personas. Configura Supabase en <code>config.js</code> y aplica <code>supabase/schema.sql</code>.</span></div>'
     : (state.dataError ? '<div class="database-notice" role="alert"><i class="iconoir-warning-triangle"></i><span><strong>Problema al consultar Supabase.</strong> ' + escapeHTML(state.dataError) + '</span></div>' : '');
   $('#dashboard-content').innerHTML = localNotice + (views[state.dashboardTab] || views.overview);
+  $$('[data-dashboard-tab]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
+    state.dashboardTab = button.dataset.dashboardTab;
+    renderDashboard();
+  }));
+  $$('[data-analytics-range]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
+    state.analyticsRange = button.dataset.analyticsRange;
+    renderDashboard();
+  }));
   $$('[data-open-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
     closeDialog($('#dashboard'));
     renderActivity(activityBySlug(button.dataset.openActivity));
   }));
   $$('[data-share-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => shareActivity(activityBySlug(button.dataset.shareActivity))));
+  $$('[data-toggle-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => toggleActivity(button.dataset.toggleActivity)));
   $$('[data-edit-activity]', $('#dashboard-content')).forEach(button => button.addEventListener('click', () => {
     state.editingActivitySlug = button.dataset.editActivity;
     state.dashboardTab = 'create';
@@ -1006,45 +1080,138 @@ drawStars();
 addEventListener('resize', resizeCanvas);
 addEventListener('pointermove', event => { pointer = { x: event.clientX, y: event.clientY }; }, { passive: true });
 
-// Optional soundscape starts only after a deliberate user action.
+// Música ambiental tonal: un pad suave y una melodía pentatónica lenta.
 let audioContext;
 let audioNodes = [];
+let audioTimer;
+let audioMaster;
+let audioStep = 0;
+const musicChords = [
+  { pad: [130.81, 196, 246.94, 329.63], melody: [523.25, 659.25, 783.99, 659.25] },
+  { pad: [110, 164.81, 220, 261.63], melody: [440, 523.25, 659.25, 523.25] },
+  { pad: [87.31, 130.81, 174.61, 220], melody: [349.23, 440, 523.25, 659.25] },
+  { pad: [98, 146.83, 196, 246.94], melody: [392, 493.88, 587.33, 659.25] }
+];
+
+function stopAmbientMusic() {
+  clearTimeout(audioTimer);
+  if (!audioContext) return;
+  const context = audioContext;
+  const master = audioMaster;
+  audioNodes.forEach(node => { try { node.stop(context.currentTime + 1.2); } catch { /* already stopped */ } });
+  audioNodes = [];
+  if (master && context.state !== 'closed') {
+    master.gain.cancelScheduledValues(context.currentTime);
+    master.gain.setTargetAtTime(0, context.currentTime, .3);
+  }
+  audioContext = null;
+  audioMaster = null;
+  setTimeout(() => context.close().catch(() => {}), 1400);
+}
+
+function scheduleMusicStep(context, master) {
+  if (audioContext !== context || context.state === 'closed') return;
+  const chordIndex = Math.floor(audioStep / 4) % musicChords.length;
+  const noteIndex = audioStep % 4;
+  const chord = musicChords[chordIndex];
+  const now = context.currentTime;
+
+  if (audioStep % 4 === 0) {
+    audioNodes.slice(0, 4).forEach((oscillator, index) => {
+      oscillator.frequency.setTargetAtTime(chord.pad[index], now, 1.1);
+    });
+  }
+
+  const oscillator = context.createOscillator();
+  const voice = context.createGain();
+  const filter = context.createBiquadFilter();
+  oscillator.type = 'sine';
+  oscillator.frequency.value = chord.melody[noteIndex];
+  filter.type = 'lowpass';
+  filter.frequency.value = 1650;
+  voice.gain.setValueAtTime(.0001, now);
+  voice.gain.linearRampToValueAtTime(.17, now + .18);
+  voice.gain.exponentialRampToValueAtTime(.0001, now + 1.8);
+  oscillator.connect(filter).connect(voice).connect(master);
+  oscillator.start(now);
+  oscillator.stop(now + 1.85);
+  audioNodes.push(oscillator);
+  oscillator.addEventListener('ended', () => { audioNodes = audioNodes.filter(node => node !== oscillator); }, { once: true });
+  audioStep++;
+  audioTimer = setTimeout(() => scheduleMusicStep(context, master), 1320);
+}
+
 $('#site-header .sound-toggle').addEventListener('click', async event => {
   const button = event.currentTarget;
   const active = button.getAttribute('aria-pressed') === 'true';
   if (active) {
-    audioNodes.forEach(node => { try { node.stop(); } catch { /* already stopped */ } });
-    audioNodes = [];
-    audioContext?.close();
-    audioContext = null;
+    stopAmbientMusic();
     button.setAttribute('aria-pressed', 'false');
     button.innerHTML = '<i class="iconoir-sound-low"></i>';
-    button.setAttribute('aria-label', 'Activar sonido ambiental');
+    button.setAttribute('aria-label', 'Activar música ambiental');
+    button.title = 'Activar música ambiental';
     return;
   }
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) {
-    toast('El sonido ambiental no está disponible en este navegador.');
+    toast('La música ambiental no está disponible en este navegador.');
     return;
   }
   audioContext = new AudioContextClass();
-  const master = audioContext.createGain();
-  master.gain.value = .025;
-  master.connect(audioContext.destination);
-  [110, 164.81, 220].forEach((frequency, index) => {
+  if (audioContext.state === 'suspended') await audioContext.resume();
+  audioMaster = audioContext.createGain();
+  audioMaster.gain.setValueAtTime(.0001, audioContext.currentTime);
+  audioMaster.gain.linearRampToValueAtTime(.3, audioContext.currentTime + 2.5);
+  audioMaster.connect(audioContext.destination);
+  const context = audioContext;
+  const master = audioMaster;
+  musicChords[0].pad.forEach((frequency, index) => {
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    oscillator.type = index === 1 ? 'sine' : 'triangle';
+    const filter = audioContext.createBiquadFilter();
+    oscillator.type = 'sine';
     oscillator.frequency.value = frequency;
-    gain.gain.value = index === 1 ? .25 : .12;
-    oscillator.connect(gain).connect(master);
+    filter.type = 'lowpass';
+    filter.frequency.value = 650;
+    gain.gain.setValueAtTime(.0001, audioContext.currentTime);
+    gain.gain.linearRampToValueAtTime(index === 0 ? .055 : .045, audioContext.currentTime + 4);
+    oscillator.connect(filter).connect(gain).connect(master);
     oscillator.start();
     audioNodes.push(oscillator);
   });
+  audioStep = 0;
+  scheduleMusicStep(context, master);
   button.setAttribute('aria-pressed', 'true');
   button.innerHTML = '<i class="iconoir-sound-high"></i>';
-  button.setAttribute('aria-label', 'Desactivar sonido ambiental');
+  button.setAttribute('aria-label', 'Desactivar música ambiental');
+  button.title = 'Desactivar música ambiental';
 });
+
+document.addEventListener('visibilitychange', async () => {
+  if (!audioContext || audioContext.state === 'closed') return;
+  if (document.hidden) {
+    clearTimeout(audioTimer);
+    await audioContext.suspend();
+  } else if (audioContext.state === 'suspended') {
+    await audioContext.resume();
+    scheduleMusicStep(audioContext, audioMaster);
+  }
+});
+
+// A small dismissible invitation makes the holiday registry visible without
+// covering the page. It stays dismissed for the current browsing session.
+const giftFloat = $('#gift-float');
+const giftFloatClose = $('#gift-float-close');
+if (giftFloat && giftFloatClose && !sessionStorage.getItem('gift-float-dismissed')) {
+  setTimeout(() => {
+    if (!document.querySelector('.dashboard[open]')) giftFloat.hidden = false;
+  }, 2600);
+  giftFloatClose.addEventListener('click', () => {
+    giftFloat.hidden = true;
+    sessionStorage.setItem('gift-float-dismissed', '1');
+  });
+  giftFloat.querySelector('a').addEventListener('click', () => { giftFloat.hidden = true; });
+}
 
 $('#copy-clabe').addEventListener('click', () => copyText('012272015568267840', 'CLABE copiada ♡'));
 

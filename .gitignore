@@ -3,3 +3,4 @@ Thumbs.db
 .env
 .env.*
 *.zip
+node_modules/

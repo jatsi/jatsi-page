@@ -12,8 +12,10 @@ Experiencia web inmersiva para Jatsi, que presenta sus dos personalidades: Jatsi
 - Registro e inicio de sesión con correo.
 - Historial personal de mensajes, votos, giros y respuestas.
 - Panel exclusivo para la administradora con mensajes, actividades y analíticas.
+- Resumen administrativo con actividad diaria, participantes, votos y giros.
 - Creación de nuevas actividades desde el panel.
 - Datos en tiempo real cuando Supabase está conectado.
+- Rotación semanal opcional de encuesta y ruleta, con avisos automáticos en Discord e Instagram Stories.
 - Preferencia de movimiento reducido y navegación con teclado.
 
 ## Probarla en tu computadora
@@ -85,3 +87,19 @@ La base usa Row Level Security:
 - La cuenta administradora se asigna desde el SQL Editor y no desde el navegador.
 
 Para un lanzamiento público conviene activar confirmación de correo, protección anti-bots y las restricciones de registro disponibles en Supabase Auth.
+
+## Rotación semanal y avisos
+
+El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Crea una encuesta y una ruleta, desactiva solo las actividades anteriores que creó la propia rotación y anuncia el cambio en Discord y como una historia de Instagram. En diciembre el contenido pasa a una selección navideña. Los resultados históricos se conservan.
+
+Para activarlo una sola vez:
+
+1. En GitHub abre **jatsi/jatsi-page → Settings → Secrets and variables → Actions → New repository secret**.
+2. Agrega `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` desde el panel del proyecto Supabase. La clave `service_role` es privada: úsala solo como secreto de Actions; nunca en `config.js`.
+3. Crea un webhook en el canal de anuncios de tu servidor Discord y guárdalo como `DISCORD_WEBHOOK_URL`.
+4. Agrega `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN` de tu cuenta profesional de Instagram Business con los permisos de publicación de contenido.
+5. Abre **Actions → Actividades semanales** y pulsa **Run workflow** para comprobar la primera publicación. Ese botón también crea actividades y publica avisos reales.
+
+La primera ejecución crea un bucket público llamado `weekly-ig-stories` en Supabase Storage para alojar la imagen vertical de la historia. Instagram Stories requiere permisos de publicación y cuenta profesional Business; una historia es un aviso público temporal, no un DM masivo.
+
+Si falta cualquiera de los secretos, la ejecución se detiene antes de modificar actividades. GitHub conserva el historial de cada ejecución y muestra errores de conexión cuando un canal no acepta la publicación.
