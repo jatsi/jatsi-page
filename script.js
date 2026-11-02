@@ -77,6 +77,7 @@ const state = {
   user: null,
   profile: null,
   activities: [...seedActivities],
+  adminActivities: [...seedActivities],
   interactions: [],
   dataError: '',
   authMode: 'login',
@@ -114,11 +115,11 @@ function saveLocalInteraction(interaction) {
 }
 
 function activityBySlug(slug) {
-  return state.activities.find(item => item.slug === slug);
+  return state.activities.find(item => item.slug === slug) || state.adminActivities.find(item => item.slug === slug);
 }
 
 function activityById(id) {
-  return state.activities.find(item => item.id === id);
+  return state.activities.find(item => item.id === id) || state.adminActivities.find(item => item.id === id);
 }
 
 function renderActivityCards() {
@@ -131,7 +132,7 @@ function renderActivityCards() {
   });
   $$('[data-generated-activity]', grid).forEach(card => card.remove());
   const knownSlugs = new Set($$('.activity-card:not([data-generated-activity]) [data-activity]', grid).map(button => button.dataset.activity));
-  state.activities.filter(item => !knownSlugs.has(item.slug)).forEach((activity, index) => {
+  state.activities.filter(item => item.is_active !== false && !knownSlugs.has(item.slug)).forEach((activity, index) => {
     const card = document.createElement('article');
     card.className = 'activity-card reveal visible';
     card.dataset.generatedActivity = activity.slug;
@@ -493,17 +494,21 @@ async function loadProfile() {
 
 async function loadActivities() {
   if (!state.supabase) {
-    state.activities = [...seedActivities, ...localActivities()];
+    state.adminActivities = [...seedActivities, ...localActivities()];
+    state.activities = state.adminActivities.filter(item => item.is_active !== false);
     renderActivityCards();
     return;
   }
-  const { data, error } = await state.supabase.from('activities').select('*').eq('is_active', true).order('created_at', { ascending: true });
+  let query = state.supabase.from('activities').select('*').order('created_at', { ascending: true });
+  if (state.profile?.role !== 'admin') query = query.eq('is_active', true);
+  const { data, error } = await query;
   if (error) {
     console.error('No se pudieron cargar las actividades de Supabase:', error);
     state.dataError = 'No se pudieron cargar las actividades. Revisa la conexión y permisos de Supabase.';
     return;
   }
-  state.activities = data || [];
+  state.adminActivities = data || [];
+  state.activities = state.adminActivities.filter(item => item.is_active !== false);
   state.dataError = '';
   renderActivityCards();
 }
@@ -514,16 +519,26 @@ async function loadInteractions(all = false) {
     state.interactions = state.profile?.role === 'admin' && all ? local : local.filter(item => item.user_id === state.user?.id || item.visitor_id === visitorId);
     return;
   }
-  let query = state.supabase.from('interactions').select('*').order('created_at', { ascending: false }).limit(500);
-  if (!all) query = query.eq('user_id', state.user.id);
-  const { data, error } = await query;
-  if (error) {
-    console.error('No se pudieron cargar las interacciones de Supabase:', error);
-    state.dataError = 'No se pudieron leer los mensajes. Confirma que el usuario tenga rol de administrador y que las políticas RLS estén instaladas.';
-    state.interactions = [];
-    return;
+  const pageSize = 1000;
+  const interactions = [];
+  let from = 0;
+  while (true) {
+    let query = state.supabase.from('interactions').select('*')
+      .order('created_at', { ascending: false }).order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (!all) query = query.eq('user_id', state.user.id);
+    const { data, error } = await query;
+    if (error) {
+      console.error('No se pudieron cargar las interacciones de Supabase:', error);
+      state.dataError = 'No se pudieron leer los mensajes y estadísticas. Confirma que el usuario tenga rol de administrador y que las políticas RLS estén instaladas.';
+      state.interactions = [];
+      return;
+    }
+    interactions.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
   }
-  state.interactions = data || [];
+  state.interactions = interactions;
   state.dataError = '';
 }
 
@@ -585,7 +600,7 @@ function messagesPanel() {
 }
 
 function activitiesPanel() {
-  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.activities.map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (item.type === 'wheel' ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar opciones</button>' : '') + '<button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
+  return '<section class="panel table-wrap"><h3>Actividades publicadas</h3><table class="data-table"><thead><tr><th>TÍTULO</th><th>TIPO</th><th>ESTADO</th><th>ADMINISTRAR</th></tr></thead><tbody>' + state.adminActivities.map(item => '<tr><td>' + escapeHTML(item.title) + '</td><td>' + escapeHTML(item.type) + '</td><td><span class="status-pill">' + (item.is_active ? 'Activa' : 'Pausada') + '</span></td><td class="activity-admin-actions">' + (item.type === 'wheel' ? '<button class="admin-table-action" type="button" data-edit-activity="' + item.slug + '"><i class="iconoir-edit"></i>Editar opciones</button>' : '') + '<button class="share-icon" type="button" data-share-activity="' + item.slug + '" aria-label="Compartir ' + escapeHTML(item.title) + '"><i class="iconoir-link"></i></button></td></tr>').join('') + '</tbody></table></section>';
 }
 
 function createPanel() {
@@ -598,8 +613,51 @@ function createPanel() {
 
 function analyticsPanel() {
   const byKind = ['message', 'question', 'poll', 'either', 'wheel', 'oracle'].map(kind => ({ kind, count: state.interactions.filter(item => item.kind === kind).length }));
-  const max = Math.max(1, ...byKind.map(item => item.count));
-  return '<div class="metric-grid">' + byKind.slice(0, 4).map(item => '<div class="metric"><small>' + item.kind.toUpperCase() + '</small><strong>' + item.count + '</strong><em>' + Math.round((item.count / Math.max(1, state.interactions.length)) * 100) + '% del total</em></div>').join('') + '</div><section class="panel" style="margin-top:15px"><h3>Actividad por experiencia</h3><div class="poll-visual" style="height:260px;justify-content:flex-start;align-items:end">' + byKind.map(item => '<i title="' + item.kind + ': ' + item.count + '" style="--value:' + Math.max(8, (item.count / max) * 100) + '%"></i>').join('') + '</div></section>';
+  const votes = state.interactions.filter(item => ['poll', 'either'].includes(item.kind));
+  const spins = state.interactions.filter(item => item.kind === 'wheel');
+  const countsFor = (activity, items) => {
+    const options = activity.config?.options || [];
+    const rows = options.map((label, index) => ({ label, count: 0, index }));
+    items.filter(item => item.activity_id === activity.id).forEach(item => {
+      const index = Number(item.payload?.option_index);
+      const label = item.payload?.option || item.payload?.result;
+      let row = label ? rows.find(option => option.label === label) : null;
+      if (!row && Number.isInteger(index) && index >= 0) row = rows[index];
+      if (!row) {
+        if (label) {
+          rows.push(row = { label, count: 0, index: rows.length });
+        }
+      }
+      if (row) row.count++;
+    });
+    return rows;
+  };
+  const distribution = (rows, total, empty) => {
+    if (!rows.length) return '<div class="analytics-empty">' + empty + '</div>';
+    const maxCount = Math.max(1, ...rows.map(row => row.count));
+    const leader = rows.reduce((best, row) => row.count > best.count ? row : best, rows[0]);
+    return '<div class="analytics-options">' + rows.map((row, index) => {
+      const percent = total ? Math.round(row.count / total * 100) : 0;
+      return '<div class="analytics-option' + (row.count && row.count === leader.count ? ' is-leader' : '') + '"><div class="analytics-option-meta"><span><i>' + String(index + 1).padStart(2, '0') + '</i>' + escapeHTML(row.label) + (row.count && row.count === leader.count ? '<b class="analytics-leader">' + (total ? 'LÍDER' : 'EMPATE') + '</b>' : '') + '</span><strong>' + row.count + ' <small>· ' + percent + '%</small></strong></div><div class="analytics-track"><i style="width:' + (row.count ? Math.max(3, row.count / maxCount * 100) : 0) + '%"></i></div></div>';
+    }).join('') + '</div>';
+  };
+  const reportActivities = state.profile?.role === 'admin' ? state.adminActivities : state.activities;
+  const pollActivities = reportActivities.filter(activity => ['poll', 'either'].includes(activity.type));
+  const wheelActivities = reportActivities.filter(activity => activity.type === 'wheel');
+  const pollPanels = pollActivities.map(activity => {
+    const rows = countsFor(activity, votes);
+    const total = votes.filter(item => item.activity_id === activity.id).length;
+    return '<article class="analytics-card"><header><span class="analytics-icon poll-icon"><i class="iconoir-stats-up-square"></i></span><div><small>ENCUESTA · ' + total + ' ' + (total === 1 ? 'VOTO' : 'VOTOS') + '</small><h4>' + escapeHTML(activity.title) + '</h4></div></header>' + distribution(rows, total, 'Aún no hay votos en esta encuesta.') + '</article>';
+  }).join('');
+  const wheelPanels = wheelActivities.map(activity => {
+    const rows = countsFor(activity, spins);
+    const total = spins.filter(item => item.activity_id === activity.id).length;
+    const top = [...rows].filter(row => row.count).sort((a, b) => b.count - a.count)[0];
+    return '<article class="analytics-card"><header><span class="analytics-icon wheel-icon"><i class="iconoir-refresh-double"></i></span><div><small>RULETA · ' + total + ' ' + (total === 1 ? 'GIRO' : 'GIROS') + '</small><h4>' + escapeHTML(activity.title) + '</h4></div>' + (top ? '<span class="wheel-top-result"><small>MÁS ELEGIDA</small><b>' + escapeHTML(top.label) + '</b><em>' + top.count + ' ' + (top.count === 1 ? 'vez' : 'veces') + '</em></span>' : '') + '</header>' + distribution(rows, total, 'Aún no hay giros registrados.') + '</article>';
+  }).join('');
+  const totalPolls = pollActivities.reduce((sum, activity) => sum + votes.filter(item => item.activity_id === activity.id).length, 0);
+  const totalSpins = wheelActivities.reduce((sum, activity) => sum + spins.filter(item => item.activity_id === activity.id).length, 0);
+  return '<div class="metric-grid analytics-summary">' + metricCard('iconoir-stats-up-square', 'VOTOS RECIBIDOS', totalPolls, pollActivities.length + ' encuestas') + metricCard('iconoir-refresh-double', 'GIROS DE RULETA', totalSpins, wheelActivities.length + ' ruletas') + metricCard('iconoir-chat-lines', 'MENSAJES', byKind.filter(item => ['message', 'question'].includes(item.kind)).reduce((sum, item) => sum + item.count, 0), 'Buzón y preguntas') + metricCard('iconoir-graph-up', 'INTERACCIONES', state.interactions.length, 'Registros completos') + '</div><section class="analytics-section"><div class="analytics-section-heading"><span>01 / LA COMUNIDAD DECIDE</span><h3>Votos por encuesta</h3><p>Reparto y porcentaje de cada opción, con la favorita resaltada.</p></div><div class="analytics-card-grid">' + (pollPanels || '<div class="analytics-empty">Todavía no hay encuestas publicadas.</div>') + '</div></section><section class="analytics-section"><div class="analytics-section-heading"><span>02 / EL AZAR DEL COSMOS</span><h3>Resultados de las ruletas</h3><p>Cuántas veces salió cada resultado y cuál aparece más.</p></div><div class="analytics-card-grid">' + (wheelPanels || '<div class="analytics-empty">Todavía no hay ruletas publicadas.</div>') + '</div></section><section class="panel analytics-activity"><h3>Actividad por tipo</h3><div class="analytics-kind-list">' + byKind.map(item => '<div><span>' + escapeHTML(item.kind === 'either' ? 'Esto o aquello' : item.kind === 'wheel' ? 'Ruletas' : item.kind === 'poll' ? 'Encuestas' : item.kind === 'message' ? 'Buzón' : item.kind === 'question' ? 'Preguntas' : 'Oráculo') + '</span><strong>' + item.count + '</strong><i><b style="width:' + Math.round(item.count / Math.max(1, state.interactions.length) * 100) + '%"></b></i></div>').join('') + '</div></section>';
 }
 
 async function renderDashboard() {
@@ -682,7 +740,8 @@ async function createActivity(event) {
         Object.assign(update, saved);
       }
       state.activities = state.activities.map(item => item.slug === editingSlug ? update : item);
-      if (!state.supabase) saveLocalActivities(state.activities);
+      state.adminActivities = state.adminActivities.map(item => item.slug === editingSlug ? update : item);
+      if (!state.supabase) saveLocalActivities(state.adminActivities);
       renderActivityCards();
       state.editingActivitySlug = '';
       state.dashboardTab = 'activities';
@@ -712,9 +771,11 @@ async function createActivity(event) {
       const { data: saved, error } = await state.supabase.from('activities').insert(activity).select().single();
       if (error) throw error;
       state.activities.push(saved);
+      state.adminActivities.push(saved);
     } else {
       state.activities.push(activity);
-      saveLocalActivities(state.activities);
+      state.adminActivities.push(activity);
+      saveLocalActivities(state.adminActivities);
     }
     renderActivityCards();
     form.reset();
@@ -776,7 +837,12 @@ async function initSupabase() {
       state.user = session?.user || null;
       state.profile = null;
       if (state.user) await loadProfile();
+      await loadActivities();
       updateAccountUI();
+      if ($('#dashboard').open) {
+        await loadInteractions(state.profile?.role === 'admin');
+        renderDashboard();
+      }
     });
     state.realtimeChannel = state.supabase.channel('jatsi-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'interactions' }, payload => {
