@@ -1,0 +1,32 @@
+name: Cumpleaños en Discord
+
+on:
+  schedule:
+    # Discord recibe los cumpleaños pendientes como máximo unos minutos después.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jatsi-birthday-dispatch
+  cancel-in-progress: false
+
+jobs:
+  publish-birthdays:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      COMMUNITY_WEBHOOK_URL: ${{ secrets.COMMUNITY_WEBHOOK_URL }}
+    steps:
+      - name: Descargar la página
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publicar cumpleaños autorizados
+        run: node scripts/dispatch-birthdays.mjs

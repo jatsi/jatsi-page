@@ -67,6 +67,24 @@ const seedActivities = [
     description: 'Deja una pregunta para el próximo Q&A.',
     config: { placeholder: '¿Qué siempre quisiste preguntarle a Jatsi?', max_length: 400 },
     is_active: true
+  },
+  {
+    id: '77777777-7777-4777-8777-777777777777',
+    slug: 'cumpleanos-del-portal',
+    type: 'question',
+    title: 'Cumpleaños del portal',
+    description: 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.',
+    config: { form_type: 'birthday' },
+    is_active: true
+  },
+  {
+    id: '88888888-8888-4888-8888-888888888888',
+    slug: 'chismografo-del-portal',
+    type: 'question',
+    title: 'Chismógrafo del portal',
+    description: 'Preguntas ligeras para compartir gustos, ideas y anécdotas divertidas de la comunidad.',
+    config: { form_type: 'chismografo', questions: ['¿Qué gusto culposo defenderías con orgullo?', '¿Qué momento del stream te ha hecho reír más?', '¿Qué juego o tema te gustaría ver en el portal?'] },
+    is_active: true
   }
 ];
 
@@ -249,6 +267,14 @@ function renderActivity(activity) {
   } else if (activity.type === 'poll' || activity.type === 'either') {
     container.innerHTML = intro + '<div class="choice-list">' + options.map((option, index) => '<button class="choice-button" type="button" data-choice="' + index + '"><i class="' + icon + '"></i><span>' + escapeHTML(option) + '</span><b>' + String(index + 1).padStart(2, '0') + '</b></button>').join('') + '</div><div id="activity-result"></div>' + share + '</div>';
     $$('[data-choice]', container).forEach(button => button.addEventListener('click', () => vote(activity, Number(button.dataset.choice), button)));
+  } else if (activity.type === 'question' && activity.config?.form_type === 'chismografo') {
+    const questions = Array.isArray(activity.config?.questions) ? activity.config.questions.slice(0, 6) : [];
+    container.innerHTML = intro + '<form class="activity-form chisme-form" id="chisme-form">' + questions.map((question, index) => '<label class="chisme-question"><span><i class="iconoir-chat-bubble-question"></i>' + String(index + 1).padStart(2, '0') + ' / ' + escapeHTML(question) + '</span><textarea name="answer_' + index + '" maxlength="300" placeholder="Cuéntanos tu respuesta…"></textarea></label>').join('') + '<label><span><i class="iconoir-user"></i>Tu alias <small>(opcional)</small></span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="Puedes responder de forma anónima"></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Tus respuestas solo las verá Jatsi en el panel. Comparte anécdotas ligeras; no incluyas secretos ni datos privados de otras personas.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Enviar mis respuestas</button><p class="form-status" role="status"></p></form>' + share + '</div>';
+    $('#chisme-form').addEventListener('submit', event => sendChismografo(event, activity));
+  } else if (activity.type === 'question' && activity.config?.form_type === 'birthday') {
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    container.innerHTML = intro + '<form class="activity-form birthday-form" id="birthday-form"><label><span><i class="iconoir-user"></i>Tu alias para Discord</span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="¿Cómo te conoce la comunidad?"></label><div class="birthday-grid"><label><span>Día</span><select name="day" required><option value="">Día</option>' + Array.from({ length: 31 }, (_, index) => '<option value="' + (index + 1) + '">' + (index + 1) + '</option>').join('') + '</select></label><label><span>Mes</span><select name="month" required><option value="">Mes</option>' + months.map((month, index) => '<option value="' + (index + 1) + '">' + month + '</option>').join('') + '</select></label></div><label class="consent-label"><input name="consent" type="checkbox" required><span>Autorizo que publiquen mi alias y mi cumpleaños (día y mes) en el servidor de Discord de la comunidad.</span></label><p class="message-privacy-note"><i class="iconoir-shield-check"></i>No pedimos ni guardamos el año de nacimiento. La publicación se procesa automáticamente en unos minutos.</p><button class="button button-primary" type="submit"><i class="iconoir-gift"></i> Compartir mi cumpleaños</button><p class="form-status" role="status"></p></form>' + share + '</div>';
+    $('#birthday-form').addEventListener('submit', event => sendBirthday(event, activity));
   } else if (activity.type === 'message' || activity.type === 'question') {
     container.innerHTML = intro + '<div class="message-portal"><div class="message-portal-backdrop" aria-hidden="true"><span></span><span></span><span></span></div><div class="message-portal-envelope" aria-hidden="true"><i class="iconoir-mail"></i><span class="envelope-seal"><i class="iconoir-heart"></i></span></div><div class="message-portal-caption"><i class="iconoir-lock"></i><span>Tu señal llega a un buzón privado</span></div></div><form class="activity-form" id="message-form"><label><span><i class="iconoir-user"></i>Tu nombre <small>(opcional)</small></span><input name="display_name" type="text" maxlength="40" autocomplete="nickname" placeholder="Si quieres, firma tu mensaje"></label><label><span><i class="iconoir-edit"></i>Tu mensaje</span><textarea name="message" maxlength="' + (activity.config?.max_length || 600) + '" placeholder="' + escapeHTML(activity.config?.placeholder || 'Escribe desde el corazón…') + '" required></textarea></label><p class="message-privacy-note"><i class="iconoir-eye-closed"></i> Si dejas el nombre vacío, tu mensaje aparecerá como anónimo.</p><button class="button button-primary" type="submit"><i class="iconoir-send-diagonal"></i> Enviar al universo</button><p class="form-status" role="status"></p></form>' + share + '</div>';
     $('#message-form').addEventListener('submit', event => sendMessage(event, activity));
@@ -351,6 +377,48 @@ async function sendMessage(event, activity) {
   } catch (error) {
     console.error('No se pudo guardar el mensaje del buzón:', error);
     status.textContent = writeErrorMessage(error, 'el mensaje');
+  }
+}
+
+async function sendChismografo(event, activity) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const questions = Array.isArray(activity.config?.questions) ? activity.config.questions.slice(0, 6) : [];
+  const answers = questions.map((question, index) => ({ question, answer: String(data.get('answer_' + index) || '').trim().slice(0, 300) })).filter(item => item.answer);
+  const status = $('.form-status', form);
+  if (!answers.length) { status.textContent = 'Responde al menos una pregunta para participar.'; return; }
+  status.textContent = 'Guardando tus respuestas…';
+  const displayName = String(data.get('display_name') || '').trim().slice(0, 40);
+  try {
+    await recordInteraction(activity, 'question', { form_type: 'chismografo', answers, display_name: displayName || null, anonymous: !displayName });
+    form.reset();
+    status.textContent = state.supabase ? '¡Listo! Tus respuestas quedaron en el panel privado de Jatsi.' : 'Guardado solo en este navegador de demostración; conecta Supabase para enviarlo al panel.';
+  } catch (error) {
+    console.error('No se pudo guardar el chismógrafo:', error);
+    status.textContent = writeErrorMessage(error, 'tus respuestas');
+  }
+}
+
+async function sendBirthday(event, activity) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const day = Number(data.get('day'));
+  const month = Number(data.get('month'));
+  const status = $('.form-status', form);
+  const maxDay = month >= 1 && month <= 12 ? new Date(2000, month, 0).getDate() : 0;
+  if (!day || !month || day > maxDay) { status.textContent = 'Elige un día válido para ese mes.'; return; }
+  if (!data.get('consent')) { status.textContent = 'Necesitamos tu autorización para publicarlo en Discord.'; return; }
+  const displayName = String(data.get('display_name') || '').trim().slice(0, 40) || 'Anónim@';
+  status.textContent = 'Guardando tu cumpleaños…';
+  try {
+    await recordInteraction(activity, 'question', { form_type: 'birthday', month, day, display_name: displayName, consent: true, discord_status: 'pending' });
+    form.reset();
+    status.textContent = state.supabase ? '¡Cumpleaños registrado! Se anunciará en Discord automáticamente en unos minutos.' : 'Guardado solo en este navegador de demostración; no se enviará a Discord hasta conectar Supabase.';
+  } catch (error) {
+    console.error('No se pudo registrar el cumpleaños:', error);
+    status.textContent = writeErrorMessage(error, 'tu cumpleaños');
   }
 }
 
@@ -570,6 +638,9 @@ function typeIcon(kind) {
 }
 
 function interactionLabel(item) {
+  if (item.payload?.form_type === 'birthday' && item.payload.discord_status === 'invalid') return 'Registro inválido: pedir que vuelva a compartirlo';
+  if (item.payload?.form_type === 'birthday') return item.payload.discord_status === 'sent' ? 'Cumpleaños publicado en Discord' : item.payload.discord_status === 'duplicate' ? 'Ya había un cumpleaños publicado' : 'Cumpleaños pendiente de publicar en Discord';
+  if (item.payload?.form_type === 'chismografo') return (item.payload.display_name || 'Anónimo') + ': ' + (item.payload.answers || []).map(answer => answer.question + ' — ' + answer.answer).join(' · ');
   if (item.payload?.text) return (item.payload.display_name || 'Anónimo') + ': ' + item.payload.text;
   if (item.payload?.option) return 'Elegiste: ' + item.payload.option;
   if (item.payload?.result) return 'Resultado: ' + item.payload.result;
@@ -721,7 +792,7 @@ function programmingPanel() {
   const daysUntilMonday = (8 - nextMonday.getDay()) % 7 || 7;
   nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
   const nextLabel = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).format(nextMonday);
-  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada semana consulta Supabase para elegir una combinación distinta de un catálogo de 52 ideas. La encuesta y la ruleta se guardan en la base de datos y el historial evita repetirlas.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Encuesta nueva</h4><p>La comunidad elige el juego, el plan o el mood del siguiente directo.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>JUEGA</small><h4>Dinámica nueva</h4><p>La ruleta estrena retos. Los resultados se quedan para tus estadísticas.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>AVISA</small><h4>Aviso en Discord</h4><p>El canal recibe el anuncio de las actividades nuevas.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">ACTIVACIÓN AUTOMÁTICA</span><h3>Conecta los canales una sola vez</h3><p>La programación ya está preparada en GitHub. Para que rote actividades y avise en Discord, agrega estos tres secretos en <strong>Settings → Secrets and variables → Actions</strong> del repositorio. Nunca escribas las claves aquí ni en <code>config.js</code>.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Solo se activan actividades automáticas creadas por esta rotación; las que publiques manualmente no se pausan. Si se agotan las 52 combinaciones, la rotación se detiene antes de repetir.</span></div></section>';
+  return '<section class="schedule-hero"><div class="schedule-hero-copy"><span class="panel-overline"><i class="iconoir-calendar"></i> RITMO SEMANAL DE LA COMUNIDAD</span><h3>Un portal nuevo.<br><em>Cada lunes.</em></h3><p>Cada semana se activa una combinación distinta de un catálogo de 160, sin repetir. Encuesta, ruleta y chismógrafo quedan guardados en Supabase para tus estadísticas.</p><div class="schedule-next"><i class="iconoir-clock"></i><span>PRÓXIMA ROTACIÓN<strong>' + escapeHTML(nextLabel) + ' · 6:00 a. m. (CDMX)</strong></span></div></div><div class="schedule-clock-art" aria-hidden="true"><span class="clock-orbit orbit-a"></span><span class="clock-orbit orbit-b"></span><span class="clock-face"><i class="iconoir-clock"></i><b>06:00</b><small>LUNES · CDMX</small></span><i class="clock-star star-a">✦</i><i class="clock-star star-b">✧</i><i class="clock-star star-c">✦</i></div></section><div class="schedule-flow"><article><span class="schedule-step-number">01</span><span class="schedule-step-icon"><i class="iconoir-stats-up-square"></i></span><small>VOTA</small><h4>Encuesta nueva</h4><p>La comunidad elige el juego, el plan o el mood del siguiente directo.</p></article><article><span class="schedule-step-number">02</span><span class="schedule-step-icon"><i class="iconoir-refresh-double"></i></span><small>JUEGA</small><h4>Ruleta y chismógrafo</h4><p>Retos para el stream y preguntas ligeras para conocer a la comunidad.</p></article><article><span class="schedule-step-number">03</span><span class="schedule-step-icon"><i class="iconoir-send-diagonal"></i></span><small>AVISA</small><h4>Aviso en Discord</h4><p>También se publican ahí, con autorización, los cumpleaños compartidos.</p></article></div><section class="panel schedule-setup"><div><span class="panel-overline">AUTOMATIZACIÓN ACTIVA</span><h3>Actividades y cumpleaños conectados</h3><p>La rotación usa los tres secretos configurados en GitHub Actions. El cumpleaños solicita solo día y mes, y necesita autorización explícita para anunciar alias y fecha en el servidor de Discord. La cola se revisa cada cinco minutos; al publicarse, esos datos personales se borran de la fila.</p></div><div class="schedule-secret-list"><span><i class="iconoir-database-check"></i> SUPABASE_URL</span><span><i class="iconoir-lock"></i> SUPABASE_SERVICE_ROLE_KEY</span><span><i class="iconoir-link"></i> COMMUNITY_WEBHOOK_URL</span></div><div class="schedule-footnote"><i class="iconoir-info-circle"></i><span>Las actividades anteriores quedan en el historial y el catálogo se detiene antes de repetir una combinación. Las respuestas del chismógrafo solo las ve la administración.</span></div></section>';
 }
 
 async function renderDashboard() {

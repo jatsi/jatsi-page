@@ -187,7 +187,9 @@ values
   ('33333333-3333-4333-8333-333333333333', 'buzon-secreto', 'message', 'Buzón secreto', 'Comparte una confesión, un pensamiento o algo que quieras decirle a Jatsi.', '{"placeholder":"Escribe desde el corazón…","max_length":600}'),
   ('44444444-4444-4444-8444-444444444444', 'esto-o-aquello', 'either', 'Esto o aquello', 'No lo pienses demasiado. Elige tu lado.', '{"options":["Anime toda la noche","Gaming hasta el amanecer"]}'),
   ('55555555-5555-4555-8555-555555555555', 'oraculo-katsy', 'oracle', 'Oráculo de Katsy', 'Una señal bonita del universo, solo para ti.', '{"options":["Tu ritmo también es progreso.","Algo bonito ya viene en camino.","Hoy confía en tu intuición.","No tienes que poder con todo a la vez.","Tu rareza es parte de tu luz.","Esa idea merece una oportunidad."]}'),
-  ('66666666-6666-4666-8666-666666666666', 'pregunta-estelar', 'question', 'Pregunta estelar', 'Deja una pregunta para el próximo Q&A.', '{"placeholder":"¿Qué siempre quisiste preguntarle a Jatsi?","max_length":400}')
+  ('66666666-6666-4666-8666-666666666666', 'pregunta-estelar', 'question', 'Pregunta estelar', 'Deja una pregunta para el próximo Q&A.', '{"placeholder":"¿Qué siempre quisiste preguntarle a Jatsi?","max_length":400}'),
+  ('77777777-7777-4777-8777-777777777777', 'cumpleanos-del-portal', 'question', 'Cumpleaños del portal', 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.', '{"form_type":"birthday"}'),
+  ('88888888-8888-4888-8888-888888888888', 'chismografo-del-portal', 'question', 'Chismógrafo del portal', 'Preguntas ligeras para compartir gustos, ideas y anécdotas divertidas de la comunidad.', '{"form_type":"chismografo","questions":["¿Qué gusto culposo defenderías con orgullo?","¿Qué momento del stream te ha hecho reír más?","¿Qué juego o tema te gustaría ver en el portal?"]}')
 on conflict (slug) do nothing;
 
 -- Realtime: ignora el error si la tabla ya fue agregada.

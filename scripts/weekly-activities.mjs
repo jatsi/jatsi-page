@@ -34,24 +34,41 @@ const topics = [
   { id: 'musica', label: 'la sesión musical', pollOptions: ['Adivina la canción', 'Opening de anime', 'Playlist del chat', 'Karaoke de broma'], wheelOptions: ['Tararea una canción para adivinar', 'Inventa una letra para el canal', 'Haz una entrada de estrella pop', 'El chat elige el siguiente género', 'Describe una canción sin nombrarla', 'Dedica una melodía al chat'] },
   { id: 'preguntas', label: 'la charla de preguntas', pollOptions: ['Preguntas divertidas', 'Historias vergonzosas', 'Metas de la comunidad', 'Confesiones ligeras'], wheelOptions: ['Responde con una sola palabra', 'Cuenta una anécdota en un minuto', 'Deja que el chat haga una pregunta', 'Responde como Katsy', 'Responde como Jatsi', 'Inventa una pregunta para el chat'] },
   { id: 'competencia', label: 'el torneo amistoso', pollOptions: ['Duelo Jatsi contra Katsy', 'Reto por equipos', 'Chat contra streamer', 'Mini campeonato sorpresa'], wheelOptions: ['Juega la siguiente ronda con handicap', 'El chat elige tu rival', 'Celebra como campeona', 'Haz una revancha relámpago', 'Ponle nombre al torneo', 'Predice quién gana la próxima ronda'] },
-  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'], wheelOptions: ['Saluda como duende', 'Cuenta un recuerdo bonito', 'Elige un reto bajo el árbol', 'Haz una pose de postal', 'Inventa un regalo para el chat', 'Brinda virtualmente con la comunidad'] }
+  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'], wheelOptions: ['Saluda como duende', 'Cuenta un recuerdo bonito', 'Elige un reto bajo el árbol', 'Haz una pose de postal', 'Inventa un regalo para el chat', 'Brinda virtualmente con la comunidad'] },
+  { id: 'arte', label: 'el taller de arte del chat', pollOptions: ['Dibujar un avatar', 'Diseñar una criatura', 'Hacer fanart en directo', 'Crear un emote nuevo'], wheelOptions: ['Dibuja con la mano no dominante', 'Inventa un emote en 30 segundos', 'Ponle nombre a una criatura', 'El chat elige tres colores', 'Haz un boceto a ciegas', 'Describe tu obra como museo'] },
+  { id: 'speedrun', label: 'el speedrun amistoso', pollOptions: ['Récord contrarreloj', 'Ruta sin atajos', 'Reto con una mano', 'Carrera contra el chat'], wheelOptions: ['Intenta la ruta más segura', 'Juega una ronda sin correr', 'El chat elige tu equipo', 'Repite el nivel con reto', 'Haz una predicción de tiempo', 'Celebra cualquier récord'] },
+  { id: 'cocina', label: 'la charla de snacks', pollOptions: ['Dulce favorito', 'Snack de madrugada', 'Comida de comfort', 'Receta imposible'], wheelOptions: ['Inventa un snack para Jatsi', 'Describe tu antojo en tres pistas', 'El chat mezcla dos sabores', 'Ponle nombre a una receta', 'Defiende una combinación rara', 'Elige el snack del próximo stream'] },
+  { id: 'moda', label: 'el look del avatar', pollOptions: ['Outfit elegante', 'Pijama cozy', 'Estilo fantasía', 'Accesorio sorpresa'], wheelOptions: ['Diseña un accesorio para Katsy', 'Elige un color para Jatsi', 'Inventa un outfit de villana', 'Combina dos estilos al azar', 'Describe un look de gala', 'El chat elige el detalle final'] },
+  { id: 'backstage', label: 'los momentos detrás de cámaras', pollOptions: ['Preparativos del directo', 'Fails técnicos', 'Historias del modelo', 'Rutina antes del stream'], wheelOptions: ['Cuenta un fail inofensivo', 'Describe tu ritual pre-stream', 'Inventa un nombre para el backstage', 'Recrea una reacción del directo', 'El chat propone una pregunta', 'Comparte un detalle del setup'] },
+  { id: 'misterio', label: 'el misterio del portal', pollOptions: ['Pista escondida', 'Acertijo del chat', 'Objeto misterioso', 'Final detectivesco'], wheelOptions: ['Inventa una pista falsa divertida', 'Describe un objeto en clave', 'El chat elige al sospechoso ficticio', 'Resuelve una adivinanza', 'Crea una contraseña cósmica', 'Narra la revelación final'] },
+  { id: 'viajes', label: 'el viaje imaginario', pollOptions: ['Ciudad de fantasía', 'Isla tranquila', 'Museo extraño', 'Plan de carretera'], wheelOptions: ['Inventa un destino para el chat', 'Elige un souvenir absurdo', 'Describe un viaje en tres emojis', 'Ponle nombre a una nave', 'El chat escoge la parada', 'Cuenta una aventura ficticia'] }
 ];
 const pollFormats = [
-  { id: 'plan', question: topic => `¿Qué hacemos en ${topic.label}?`, wheelTitle: topic => `Ruleta: ${topic.label}`, prefix: '' },
-  { id: 'mood', question: topic => `¿Con qué mood abrimos ${topic.label}?`, wheelTitle: topic => `Reto relámpago: ${topic.label}`, prefix: 'En 30 segundos: ' },
-  { id: 'community', question: topic => `¿Cómo quieres participar en ${topic.label}?`, wheelTitle: topic => `La comunidad decide: ${topic.label}`, prefix: 'Con voz de narradora: ' },
-  { id: 'twist', question: topic => `¿Qué giro le ponemos a ${topic.label}?`, wheelTitle: topic => `Giro inesperado: ${topic.label}`, prefix: 'Con una regla inventada por el chat: ' }
+  { id: 'plan', question: topic => `¿Qué hacemos en ${topic.label}?`, wheelTitle: topic => `Ruleta: ${topic.label}`, prefix: '', chismeTitle: topic => `Chismógrafo de confesiones · ${topic.label}`, chismeQuestions: topic => [`¿Qué gusto culposo tuyo combina con ${topic.label}?`, `¿Qué anécdota graciosa tuya recuerdas sobre ${topic.label}?`, `¿Qué opinión inofensiva defenderías sobre ${topic.label}?`] },
+  { id: 'mood', question: topic => `¿Con qué mood abrimos ${topic.label}?`, wheelTitle: topic => `Reto relámpago: ${topic.label}`, prefix: 'En 30 segundos: ', chismeTitle: topic => `Chismógrafo de moods · ${topic.label}`, chismeQuestions: topic => [`¿Qué mood secreto eliges para ${topic.label}?`, `¿Qué detalle pequeño te emociona de ${topic.label}?`, `¿Qué momento de ${topic.label} te hace reír?`] },
+  { id: 'community', question: topic => `¿Cómo quieres participar en ${topic.label}?`, wheelTitle: topic => `La comunidad decide: ${topic.label}`, prefix: 'Con voz de narradora: ', chismeTitle: topic => `Chismógrafo del chat · ${topic.label}`, chismeQuestions: topic => [`¿Qué propuesta del chat te gustaría ver en ${topic.label}?`, `¿Qué rol elegirías para ti en ${topic.label}?`, `¿Qué pregunta divertida le harías al chat sobre ${topic.label}?`] },
+  { id: 'twist', question: topic => `¿Qué giro le ponemos a ${topic.label}?`, wheelTitle: topic => `Giro inesperado: ${topic.label}`, prefix: 'Con una regla inventada por el chat: ', chismeTitle: topic => `Chismógrafo de giros · ${topic.label}`, chismeQuestions: topic => [`¿Qué giro inesperado te gustaría para ${topic.label}?`, `¿Qué regla inventada probarías en ${topic.label}?`, `¿Qué final caótico te imaginas para ${topic.label}?`] },
+  { id: 'story', question: topic => `¿Qué historia contamos en ${topic.label}?`, wheelTitle: topic => `Historia improvisada: ${topic.label}`, prefix: 'En modo personaje: ', chismeTitle: topic => `Chismógrafo de historias · ${topic.label}`, chismeQuestions: topic => [`¿Qué personaje ficticio serías en ${topic.label}?`, `¿Qué escena divertida inventarías para ${topic.label}?`, `¿Qué título dramático tendría tu historia de ${topic.label}?`] },
+  { id: 'prediction', question: topic => `¿Qué predicción hacemos sobre ${topic.label}?`, wheelTitle: topic => `Apuesta amistosa: ${topic.label}`, prefix: 'Narrado como torneo: ', chismeTitle: topic => `Chismógrafo de predicciones · ${topic.label}`, chismeQuestions: topic => [`¿Qué crees que saldrá inesperadamente bien en ${topic.label}?`, `¿Qué predicción graciosa haces sobre ${topic.label}?`, `¿Qué detalle crees que sorprenderá más en ${topic.label}?`] },
+  { id: 'combo', question: topic => `¿Qué mezcla probamos en ${topic.label}?`, wheelTitle: topic => `Combo inesperado: ${topic.label}`, prefix: 'Como misión secundaria: ', chismeTitle: topic => `Chismógrafo de combos · ${topic.label}`, chismeQuestions: topic => [`¿Qué dos ideas mezclarías en ${topic.label}?`, `¿Qué crossover ficticio quedaría perfecto con ${topic.label}?`, `¿Qué combinación rara sí te atreverías a probar en ${topic.label}?`] },
+  { id: 'finale', question: topic => `¿Cómo cerramos ${topic.label}?`, wheelTitle: topic => `Final sorpresa: ${topic.label}`, prefix: 'Solo tienes una oportunidad: ', chismeTitle: topic => `Chismógrafo final · ${topic.label}`, chismeQuestions: topic => [`¿Qué momento te gustaría repetir de ${topic.label}?`, `¿Qué detalle debería quedarse para la próxima de ${topic.label}?`, `¿Qué frase resumiría tu experiencia con ${topic.label}?`] }
 ];
 const pollAlternatives = [
   ['Caos y risas', 'Misterio y sustos', 'Relajarnos juntas', 'Competencia intensa'],
   ['El chat escoge el reto', 'Jugamos en equipo', 'Votamos por rondas', 'Sorpresa al final'],
-  ['Cambio de reglas', 'Ruleta sorpresa', 'Crossover Jatsi × Katsy', 'Final elegido por el chat']
+  ['Cambio de reglas', 'Ruleta sorpresa', 'Crossover Jatsi × Katsy', 'Final elegido por el chat'],
+  ['Confesión divertida', 'Predicción inesperada', 'Opinión impopular', 'Reto exprés'],
+  ['Jatsi se sorprende', 'Katsy se ríe', 'El chat cambia el plan', 'Final inesperado'],
+  ['Modo detective', 'Modo improvisación', 'Modo equipo', 'Modo caos'],
+  ['Final tierno', 'Final caótico', 'Final misterioso', 'Que decida el chat']
 ];
-const planCatalog = topics.flatMap(topic => pollFormats.map((format, index) => ({
+const planCatalog = topics.flatMap((topic, topicIndex) => pollFormats.map((format, formatIndex) => ({
   id: `${topic.id}-${format.id}`,
-  poll: { title: format.question(topic), options: index === 0 ? topic.pollOptions : pollAlternatives[index - 1] },
-  wheel: { title: format.wheelTitle(topic), options: topic.wheelOptions.map(option => `${format.prefix}${option}`) }
+  poll: { title: format.question(topic), options: formatIndex === 0 ? topic.pollOptions : pollAlternatives[formatIndex - 1] },
+  wheel: { title: format.wheelTitle(topic), options: topic.wheelOptions.map(option => `${format.prefix}${option}`) },
+  chismografo: { title: format.chismeTitle(topic.label), questions: format.chismeQuestions(topic.label) }
 })));
+if (planCatalog.length !== 160) throw new Error(`El catálogo debe tener 160 combinaciones; tiene ${planCatalog.length}.`);
 let plan;
 let entries;
 async function supabaseRequest(path, init = {}) {
@@ -103,8 +120,18 @@ entries = [
     slug: `jatsi-semana-${safeWeek}-ruleta`, type: 'wheel', title: plan.wheel.title,
     description: 'Gira la ruleta: el chat propone el destino y Jatsi o Katsy acepta el reto en directo.',
     config: { options: plan.wheel.options, campaign: 'weekly', plan_id: plan.id, week: weekKey }
+  },
+  {
+    slug: `jatsi-semana-${safeWeek}-chismografo`, type: 'question', title: plan.chismografo.title,
+    description: 'Responde preguntas ligeras sobre tus gustos y el contenido. Evita compartir secretos o datos privados de otras personas.',
+    config: { form_type: 'chismografo', questions: plan.chismografo.questions, campaign: 'weekly', plan_id: plan.id, week: weekKey }
   }
 ];
+const birthdayActivity = {
+  slug: 'cumpleanos-del-portal', type: 'question', title: 'Cumpleaños del portal',
+  description: 'Comparte solo el día y el mes. Si aceptas, publicaremos tu alias y fecha en el Discord de la comunidad.',
+  config: { form_type: 'birthday' }, is_active: true
+};
 async function postDiscord() {
   const response = await fetch(process.env.COMMUNITY_WEBHOOK_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -113,7 +140,7 @@ async function postDiscord() {
       allowed_mentions: { parse: [] },
       embeds: [{
         title: 'Esta semana: la comunidad decide',
-        description: `**Encuesta:** ${plan.poll.title}\n\n**Dinámica:** ${plan.wheel.title}\n\nVota, gira y juega con nosotras.`,
+        description: `**Encuesta:** ${plan.poll.title}\n\n**Dinámica:** ${plan.wheel.title}\n\n**Chismógrafo:** ${plan.chismografo.title}\n\nVota, gira y participa con nosotras.`,
         url: pageUrl, color: 0xb879ef,
         footer: { text: 'Jatsi × Katsy · Portal semanal' }
       }]
@@ -128,10 +155,14 @@ await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
   method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
   body: JSON.stringify(entries.map(activity => ({ ...activity, is_active: true })))
 });
+await supabaseRequest('/rest/v1/activities?on_conflict=slug', {
+  method: 'POST', headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+  body: JSON.stringify([birthdayActivity])
+});
 for (const activity of oldCampaigns.filter(item => !item.slug.startsWith(currentPrefix))) {
   await supabaseRequest(`/rest/v1/activities?id=eq.${activity.id}`, {
     method: 'PATCH', body: JSON.stringify({ is_active: false })
   });
 }
 await postDiscord();
-console.log(`Semana ${weekKey}: encuesta y ruleta activadas; aviso publicado en Discord.`);
+console.log(`Semana ${weekKey}: encuesta, ruleta y chismógrafo activados; aviso publicado en Discord.`);

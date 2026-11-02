@@ -90,14 +90,16 @@ Para un lanzamiento público conviene activar confirmación de correo, protecci�
 
 ## Rotación semanal y avisos
 
-El panel incluye una pestaña **Programación**. El flujo de GitHub Actions de este repositorio está preparado para correr cada lunes a las **6:00 a. m. de Ciudad de México**. Consulta en Supabase qué ideas ya usó y elige una combinación nueva de un catálogo de 52 semanas. Guarda la encuesta y la ruleta en `activities`, pausa solo las actividades automáticas de semanas anteriores y anuncia el cambio en Discord. Las respuestas históricas se conservan. Cuando se agote el catálogo, el flujo se detendrá antes de publicar una actividad repetida; habrá que añadir ideas nuevas.
+El panel incluye una pestaña **Programación**. GitHub Actions activa cada lunes a las **6:00 a. m. de Ciudad de México** una encuesta, una ruleta y un chismógrafo del catálogo de 160 combinaciones. El historial evita repetir una combinación y se conserva en Supabase. La automatización también mantiene disponibles el **Chismógrafo del portal** y **Cumpleaños del portal**.
+
+El formulario de cumpleaños solo pide día, mes y un alias opcional; nunca solicita el año. Antes de guardar exige autorización para compartir alias y fecha en el servidor Discord. Una segunda automatización revisa la cola cada cinco minutos, omite registros duplicados por visitante y, después de publicarlos, borra el alias y la fecha de la fila de Supabase. Las respuestas del chismógrafo se guardan en la tabla privada de interacciones y solo las puede revisar administración. No se deben compartir rumores, secretos ni datos privados de otras personas.
 
 Para activarlo una sola vez:
 
 1. En GitHub abre **jatsi/jatsi-page → Settings → Secrets and variables → Actions → New repository secret**.
 2. Agrega `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` desde el panel del proyecto Supabase. La clave `service_role` es privada: úsala solo como secreto de Actions; nunca en `config.js`.
 3. Crea un webhook en el canal de anuncios de tu servidor Discord y guarda la URL completa (normalmente `https://discord.com/api/webhooks/...`) como `COMMUNITY_WEBHOOK_URL`. El nombre es solo una etiqueta; el valor debe ser la URL del webhook, no la invitación del servidor ni el enlace normal del canal.
-4. Abre **Actions → Actividades semanales** y pulsa **Run workflow** para comprobar la primera publicación. Ese botón crea actividades y publica un aviso real en Discord.
+4. El flujo se ejecuta automáticamente cada lunes. Puedes usar **Actions → Actividades semanales → Run workflow** para activarlo antes de la siguiente semana; eso crea las actividades y publica un aviso real en Discord.
 
 Por ahora esta programación solo crea actividades en Supabase y envía el anuncio a Discord. Instagram queda fuera hasta que se configure por separado.
 
