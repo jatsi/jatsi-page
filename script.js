@@ -6,6 +6,7 @@ const {
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const lowPowerDevice = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
 const configured = Boolean(
   SUPABASE_URL &&
   SUPABASE_PUBLISHABLE_KEY &&
@@ -778,6 +779,8 @@ const chismeBookEmotes = ['jatsi_love_112.gif', 'jatsi_lurk_112.gif', 'jatsi_heh
 let activePublicBookIndex = 0;
 let activePublicBookPage = 0;
 let publicBookPageTurning = false;
+let publicChismeWallPage = 0;
+const publicChismeWallPageSize = 10;
 
 function renderPublicChisme(items, wallSelector = '#chisme-public-wall') {
   const wall = $(wallSelector);
@@ -801,11 +804,27 @@ function renderPublicChisme(items, wallSelector = '#chisme-public-wall') {
     wall.innerHTML = '<div class="chisme-wall-empty"><span>✎</span><strong>Este cuadernito todavía está en blanco.</strong><small>Responde al chismógrafo. Si autorizas que se comparta, Jatsi puede aprobar tu respuesta para el mural.</small></div>';
     return;
   }
-  wall.innerHTML = publicChismeBooks.map((book, index) => {
+  renderPublicChismePage(wall, wallSelector);
+}
+
+function renderPublicChismePage(wall, wallSelector) {
+  const pageCount = Math.max(1, Math.ceil(publicChismeBooks.length / publicChismeWallPageSize));
+  publicChismeWallPage = Math.min(publicChismeWallPage, pageCount - 1);
+  const firstBook = publicChismeWallPage * publicChismeWallPageSize;
+  const visibleBooks = publicChismeBooks.slice(firstBook, firstBook + publicChismeWallPageSize);
+  wall.innerHTML = visibleBooks.map((book, pageIndex) => {
+    const index = firstBook + pageIndex;
     const preview = book.answers[0] || {};
     const emote = chismeBookEmotes[index % chismeBookEmotes.length];
     return '<button class="chisme-public-book" type="button" data-open-public-book="' + index + '" style="--book-tilt:' + (index % 2 ? '1deg' : '-1deg') + '"><span class="chisme-public-book-shine" aria-hidden="true">✧</span><img class="chisme-public-book-emote" src="' + emote + '" alt="Emote de Jatsi" loading="lazy"><span class="chisme-public-book-copy"><small>CUADERNO ANÓNIMO · ' + book.answers.length + (book.answers.length === 1 ? ' RESPUESTA' : ' RESPUESTAS') + '</small><b>Confesiones de la comunidad</b><span>' + escapeHTML(preview.answer || '') + '</span><em>Abrir el cuadernito <i class="iconoir-arrow-up-right"></i></em></span><span class="chisme-public-book-spine" aria-hidden="true"></span></button>';
   }).join('');
+  if (pageCount > 1) {
+    wall.insertAdjacentHTML('beforeend', '<nav class="chisme-wall-pagination" aria-label="Páginas de cuadernitos"><button type="button" data-chisme-wall-page="-1" ' + (publicChismeWallPage === 0 ? 'disabled' : '') + '>‹ Anteriores</button><span>CUADERNOS ' + (firstBook + 1) + '–' + Math.min(firstBook + publicChismeWallPageSize, publicChismeBooks.length) + ' DE ' + publicChismeBooks.length + '</span><button type="button" data-chisme-wall-page="1" ' + (publicChismeWallPage >= pageCount - 1 ? 'disabled' : '') + '>Siguientes ›</button></nav>');
+    $$('[data-chisme-wall-page]', wall).forEach(button => button.addEventListener('click', () => {
+      publicChismeWallPage += Number(button.dataset.chismeWallPage);
+      renderPublicChismePage(wall, wallSelector);
+    }));
+  }
   $$('[data-open-public-book]', wall).forEach(button => button.addEventListener('click', () => openPublicChismeBook(Number(button.dataset.openPublicBook))));
 }
 
@@ -1372,8 +1391,19 @@ const revealObserver = new IntersectionObserver(entries => {
 }, { threshold: .13 });
 $$('.reveal').forEach(element => revealObserver.observe(element));
 
+const lazyBackgroundObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const element = entry.target;
+    element.style.backgroundImage = `url("${element.dataset.lazyBg}")`;
+    delete element.dataset.lazyBg;
+    lazyBackgroundObserver.unobserve(element);
+  });
+}, { rootMargin: '240px 0px' }) : null;
+$$('[data-lazy-bg]').forEach(element => lazyBackgroundObserver ? lazyBackgroundObserver.observe(element) : (element.style.backgroundImage = `url("${element.dataset.lazyBg}")`));
+
 const hero = $('.hero');
-if (!prefersReducedMotion.matches) {
+if (!prefersReducedMotion.matches && !lowPowerDevice) {
   hero.addEventListener('pointermove', event => {
     const x = (event.clientX / innerWidth - .5) * 10;
     const y = (event.clientY / innerHeight - .5) * 8;
@@ -1457,13 +1487,13 @@ const context = canvas.getContext('2d');
 let stars = [];
 let pointer = { x: -1000, y: -1000 };
 function resizeCanvas() {
-  const ratio = Math.min(devicePixelRatio || 1, 2);
+  const ratio = Math.min(devicePixelRatio || 1, lowPowerDevice ? 1 : 1.5);
   canvas.width = innerWidth * ratio;
   canvas.height = innerHeight * ratio;
   canvas.style.width = innerWidth + 'px';
   canvas.style.height = innerHeight + 'px';
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
-  const count = Math.min(100, Math.floor(innerWidth / 13));
+  const count = lowPowerDevice ? 0 : Math.min(80, Math.floor(innerWidth / 18));
   stars = Array.from({ length: count }, () => ({
     x: Math.random() * innerWidth,
     y: Math.random() * innerHeight,
@@ -1488,7 +1518,7 @@ function drawStars(time = 0) {
     context.fillStyle = 'rgba(229,214,255,' + (.32 + Math.sin(time * .001 + star.phase) * .2) + ')';
     context.fill();
   });
-  if (!prefersReducedMotion.matches) requestAnimationFrame(drawStars);
+  if (!prefersReducedMotion.matches && !lowPowerDevice) requestAnimationFrame(drawStars);
 }
 resizeCanvas();
 drawStars();
@@ -1584,6 +1614,17 @@ const clipItems = [
 const clipTrack = $('#clip-track');
 if (clipTrack) {
   const labels = { twitch:'TWITCH CLIP', youtube:'YOUTUBE SHORT', tiktok:'TIKTOK' };
+  const clipPosterObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const poster = $('.clip-poster', entry.target);
+      if (poster?.dataset.src) {
+        poster.src = poster.dataset.src;
+        delete poster.dataset.src;
+      }
+      clipPosterObserver.unobserve(entry.target);
+    });
+  }, { root: clipTrack, rootMargin: '0px 75% 0px 75%' }) : null;
   const links = {
     twitch: id => 'https://www.twitch.tv/jatsi25/clip/' + id,
     youtube: id => 'https://www.youtube.com/shorts/' + id,
@@ -1601,8 +1642,12 @@ if (clipTrack) {
     const poster = document.createElement('img');
     poster.className = 'clip-poster';
     poster.alt = 'Vista previa: ' + clip.title;
-    poster.loading = index < 3 ? 'eager' : 'lazy';
-    if (clip.image) poster.src = 'assets/clips/curated/' + clip.image;
+    poster.loading = 'lazy';
+    if (clip.image) {
+      poster.dataset.src = 'assets/clips/curated/' + clip.image;
+      if (clipPosterObserver) clipPosterObserver.observe(frame);
+      else poster.src = poster.dataset.src;
+    }
     else poster.hidden = true;
     const badge = document.createElement('span');
     badge.className = 'clip-platform-pill';
@@ -1688,7 +1733,18 @@ if (clipTrack) {
 // Initial deep link and startup. Keeping this as a regular script also lets the
 // static page open directly from disk without browsers blocking ES modules.
 initSupabase().finally(() => {
-  loadPublicChisme();
+  const publicChismeWall = $('#chisme-public-wall');
+  if (publicChismeWall && 'IntersectionObserver' in window) {
+    const publicChismeObserver = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        publicChismeObserver.disconnect();
+        loadPublicChisme();
+      }
+    }, { rootMargin: '420px 0px' });
+    publicChismeObserver.observe(publicChismeWall);
+  } else if (publicChismeWall) {
+    loadPublicChisme();
+  }
   setTimeout(() => $('#portal-intro').classList.add('done'), prefersReducedMotion.matches ? 0 : 950);
   const deepLink = new URL(location.href).searchParams.get('activity');
   if (deepLink) {
