@@ -22,7 +22,7 @@ const weekKey = `${isoYear}-W${String(isoWeek).padStart(2, '0')}`;
 const safeWeek = weekKey.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
 const topics = [
-  { id: 'terror', label: 'la noche de terror', pollOptions: ['Terror psicológico', 'Casa embrujada', 'Criaturas extrañas', 'Historias del chat'] },
+  { id: 'creatividad', label: 'el reto creativo', pollOptions: ['Diseñamos un personaje', 'Inventamos una historia', 'Creamos un emote', 'El chat propone una idea'] },
   { id: 'cozy', label: 'el stream cozy', pollOptions: ['Juego de granjita', 'Decoramos juntas', 'Charla con cafecito', 'Aventura relajada'] },
   { id: 'gaming', label: 'el próximo reto gaming', pollOptions: ['Una partida cooperativa', 'Modo difícil', 'Juego indie sorpresa', 'El chat decide el juego'] },
   { id: 'anime', label: 'la noche de anime', pollOptions: ['Teorías locas', 'Tier list de personajes', 'Adivina el opening', 'Recomendaciones del chat'] },
@@ -34,7 +34,7 @@ const topics = [
   { id: 'musica', label: 'la sesión musical', pollOptions: ['Adivina la canción', 'Opening de anime', 'Playlist del chat', 'Karaoke de broma'] },
   { id: 'preguntas', label: 'la charla de preguntas', pollOptions: ['Preguntas divertidas', 'Historias vergonzosas', 'Metas de la comunidad', 'Confesiones ligeras'] },
   { id: 'competencia', label: 'el torneo amistoso', pollOptions: ['Duelo Jatsi contra Katsy', 'Reto por equipos', 'Chat contra streamer', 'Mini campeonato sorpresa'] },
-  { id: 'navidad', label: 'el especial de invierno', pollOptions: ['Juego cozy', 'Terror bajo cobija', 'Historias de invierno', 'Reto navideño con el chat'] },
+  { id: 'charla', label: 'la charla con la comunidad', pollOptions: ['Preguntas rápidas', 'Anécdotas del chat', 'Opiniones impopulares', 'Historias de la semana'] },
   { id: 'arte', label: 'el taller de arte del chat', pollOptions: ['Dibujar un avatar', 'Diseñar una criatura', 'Hacer fanart en directo', 'Crear un emote nuevo'] },
   { id: 'speedrun', label: 'el speedrun amistoso', pollOptions: ['Récord contrarreloj', 'Ruta sin atajos', 'Reto con una mano', 'Carrera contra el chat'] },
   { id: 'cocina', label: 'la charla de snacks', pollOptions: ['Dulce favorito', 'Snack de madrugada', 'Comida de comfort', 'Receta imposible'] },
@@ -55,7 +55,7 @@ const pollFormats = [
 ];
 const weeklyFormats = pollFormats.slice(0, 3);
 const pollAlternatives = [
-  ['Caos y risas', 'Misterio y sustos', 'Relajarnos juntas', 'Competencia intensa'],
+  ['Caos y risas', 'Creatividad y ocurrencias', 'Relajarnos juntas', 'Competencia amistosa'],
   ['El chat escoge el reto', 'Jugamos en equipo', 'Votamos por rondas', 'Sorpresa al final'],
   ['Cambio de reglas', 'Ruleta sorpresa', 'Crossover Jatsi × Katsy', 'Final elegido por el chat'],
   ['Confesión divertida', 'Predicción inesperada', 'Opinión impopular', 'Reto exprés'],
@@ -84,7 +84,7 @@ const wheelChallenges = [
   'Describe tu día como si fuera el tráiler de una película',
   'Haz una reverencia solemne a tu objeto más cercano',
   'Inventa un nombre ridículo para tu próxima estrategia',
-  'Cuenta una mini historia de terror sobre perder la partida',
+  'Cuenta cómo convertirías un pequeño fail en una gran victoria',
   'Lee la siguiente frase como narradora de documental',
   'Responde la siguiente pregunta con una rima improvisada',
   'Haz una cara de sorpresa y mantenla durante cinco segundos'
